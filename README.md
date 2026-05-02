@@ -1,13 +1,14 @@
 # pyquiz-forge
 
-> Python 练习题自动生成系统 — MVP 后端
+> Python 练习题自动生成系统
 
 一个面向个人/小团队的 Python 练习题"题库生产工具"。给它一个知识点、难度和题型，它通过大模型自动产出结构化、可直接用于教学的练习题，并以题库形式管理和导出。
 
 - **后端**：Python 3.11 + FastAPI + SQLAlchemy 2.0 + Pydantic 2
+- **前端**：Vue 3 + Vite + TypeScript + Element Plus
 - **数据库**：SQLite（文件型，零运维）
 - **大模型**：兼容 OpenAI 协议（DeepSeek / OpenAI / Qwen / Moonshot 等），Claude 接口预留
-- **前端**：暂无，直接用 Swagger UI（`/docs`）调试
+- **部署**：单 Docker 容器同时服务前后端
 
 ---
 
@@ -36,6 +37,7 @@
 - 题目重新生成（新建 or 覆盖）
 - 题库导出 JSON / Markdown
 - 完整生成日志（prompt、原始返回、Token、耗时）
+- **管理后台 UI**（侧栏 + 概览 + 学习路线 + 配置 + 生成 + 题库 + 日志 + 导出）
 
 ---
 
@@ -68,14 +70,16 @@ curl http://localhost:8765/api/v1/health
 
 打开浏览器访问：
 
-- Swagger UI：http://localhost:8765/docs
-- 根路径：http://localhost:8765/
+- **管理后台**：http://localhost:8765/
+- **Swagger UI**：http://localhost:8765/docs
 
 ---
 
 ## 本地开发运行
 
-要求：Python 3.11+。
+要求：Python 3.11+，Node.js 20+。
+
+### 后端
 
 ```bash
 # 1. 创建虚拟环境
@@ -89,14 +93,35 @@ pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 填入 LLM API Key
 
-# 4. 初始化数据库 + 种子学习路线（可选；首次启动 lifespan 也会自动做）
-python -m scripts.init_db
-
-# 5. 启动服务
+# 4. 启动后端
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-访问 http://localhost:8000/docs
+后端单独跑时，根路径返回元信息 JSON；`/docs` 仍可访问。
+
+### 前端（开发模式，HMR）
+
+新开一个终端：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+打开 http://localhost:5173/ 。Vite dev server 自动把 `/api/*`、`/docs`、`/openapi.json` 代理到 `http://127.0.0.1:8000`，所以前后端协作开发零 CORS 配置。
+
+### 前端构建并由后端服务
+
+如果你想在本地复现"单服务"模式（不开 Vite）：
+
+```bash
+cd frontend && npm run build && cd ..
+rm -rf app/static && cp -r frontend/dist app/static
+uvicorn app.main:app --port 8000
+```
+
+打开 http://localhost:8000/ ，整个管理后台由 FastAPI 用 StaticFiles 提供。
 
 ---
 
@@ -321,7 +346,7 @@ SQLite 文件在挂载的 `./data` 目录里，升级不会丢数据。
 
 ### 安全建议（重要）
 
-Swagger UI 暴露公网相当于把 LLM API 调用接口对外开放——任何人都能消耗你的 Token 配额。生产环境强烈建议至少做以下之一：
+管理后台 + Swagger UI 暴露公网相当于把 LLM API 调用接口对外开放——任何人都能消耗你的 Token 配额。生产环境强烈建议至少做以下之一：
 
 - **仅本机端口**：把 compose 端口改为 `"127.0.0.1:8765:8000"`，再用 Nginx/Caddy 反代加 Basic Auth 或 API Key
 - **关闭 Swagger**：在 `app/main.py` 中传 `docs_url=None, redoc_url=None`
@@ -382,65 +407,34 @@ A：MVP 阶段是明文存 SQLite，文件权限是宿主机 user 私有的 `dat
 
 ```
 pyquiz-forge/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                       # FastAPI 入口
-│   ├── core/
-│   │   ├── config.py                 # Pydantic Settings
-│   │   ├── database.py               # SQLAlchemy engine / session
-│   │   └── logger.py                 # 日志配置
+├── app/                              # 后端
+│   ├── main.py                       # FastAPI 入口 + StaticFiles + SPA fallback
+│   ├── core/                         # config / database / logger
 │   ├── models/                       # SQLAlchemy ORM 模型
-│   │   ├── base.py
-│   │   ├── chapter.py
-│   │   ├── knowledge_point.py
-│   │   ├── llm_config.py
-│   │   ├── exercise.py
-│   │   └── generation_log.py
 │   ├── schemas/                      # Pydantic 请求/响应模型
-│   │   ├── common.py
-│   │   ├── chapter.py
-│   │   ├── knowledge_point.py
-│   │   ├── llm_config.py
-│   │   ├── exercise.py
-│   │   └── generation.py
 │   ├── crud/                         # 数据访问层
-│   │   ├── chapter.py
-│   │   ├── knowledge_point.py
-│   │   ├── llm_config.py
-│   │   ├── exercise.py
-│   │   └── generation_log.py
-│   ├── api/
-│   │   ├── deps.py
-│   │   └── v1/
-│   │       ├── router.py             # 汇总
-│   │       ├── system.py
-│   │       ├── learning_path.py
-│   │       ├── llm_config.py
-│   │       ├── generation.py
-│   │       ├── exercise.py
-│   │       └── export.py
-│   ├── services/                     # 业务逻辑层
-│   │   ├── generation_service.py
-│   │   ├── export_service.py
-│   │   └── seed_service.py
-│   ├── llm/                          # LLM 调用层
-│   │   ├── base.py
-│   │   ├── factory.py
-│   │   ├── openai_compatible.py
-│   │   ├── claude.py                 # 预留
-│   │   └── prompts.py
-│   └── data/
-│       └── learning_path.json        # 学习路线种子数据
-├── scripts/
-│   └── init_db.py                    # 建表 + 种子脚本
+│   ├── api/v1/                       # 路由层
+│   ├── services/                     # 业务逻辑（生成、导出、种子）
+│   ├── llm/                          # LLM 调用层（OpenAI 兼容 + Claude stub）
+│   ├── data/learning_path.json       # 学习路线种子数据
+│   └── static/                       # ⬅ 前端构建产物（Docker 构建时自动注入）
+├── frontend/                         # Vue 3 + TypeScript 前端
+│   ├── src/
+│   │   ├── api/                      # axios 封装
+│   │   ├── types/                    # TS 类型定义（与后端 schema 对齐）
+│   │   ├── stores/                   # Pinia
+│   │   ├── components/               # 公共组件
+│   │   ├── views/                    # 页面
+│   │   ├── layouts/                  # AdminLayout
+│   │   ├── router/
+│   │   └── utils/
+│   ├── package.json
+│   └── vite.config.ts
+├── scripts/init_db.py                # 建表 + 种子脚本
 ├── data/                             # 运行时数据（挂载）
-│   └── pyquiz.db
 ├── logs/                             # 运行日志（挂载）
-│   └── app.log
-├── .env.example
-├── .gitignore
-├── .dockerignore
-├── Dockerfile
+├── .env.example  .gitignore  .dockerignore
+├── Dockerfile                        # 多阶段：Node 构建前端 → Python 运行后端
 ├── docker-compose.yml
 ├── requirements.txt
 └── README.md

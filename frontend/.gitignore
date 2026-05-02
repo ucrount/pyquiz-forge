@@ -1,0 +1,24 @@
+# node
+node_modules/
+dist/
+dist-ssr/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+
+# vite auto-generated declarations
+src/auto-imports.d.ts
+src/components.d.ts
+
+# tsbuild info
+*.tsbuildinfo
+
+# vue-tsc -b output for vite.config.ts (regenerated each build)
+vite.config.d.ts
+vite.config.js

@@ -17,6 +17,15 @@ data/*.db-journal
 logs/*.log
 .env
 .env.*
-README.md
 *.md
 tests/
+
+# Frontend dev artefacts — must be excluded so the Docker build cache works
+# (host node_modules pollutes the build context).
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/src/auto-imports.d.ts
+frontend/src/components.d.ts
+
+# But DO include frontend source itself (frontend/, frontend/package.json, etc).

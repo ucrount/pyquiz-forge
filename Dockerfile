@@ -1,3 +1,18 @@
+# ---------- Stage 1: build frontend ----------
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /build
+
+# Install deps first (cache layer)
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci --no-fund --no-audit
+
+# Build
+COPY frontend/ ./
+RUN npm run build
+
+
+# ---------- Stage 2: backend + frontend dist ----------
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -13,18 +28,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         tzdata curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python deps first (layer cache)
+# Python deps
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Copy source
+# Backend source
 COPY app ./app
 COPY scripts ./scripts
 
-# Runtime dirs (will be mounted as volumes in compose)
+# Frontend dist -> served by FastAPI as static files
+COPY --from=frontend-builder /build/dist ./app/static
+
+# Runtime dirs (mounted as volumes in compose)
 RUN mkdir -p /app/data /app/logs
 
 EXPOSE 8000
 
-# Init DB + seed learning path, then start service
 CMD ["sh", "-c", "python -m scripts.init_db && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"]
