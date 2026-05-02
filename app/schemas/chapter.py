@@ -1,7 +1,7 @@
 """Chapter schemas."""
-from typing import List
+from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChapterBase(BaseModel):
@@ -10,6 +10,22 @@ class ChapterBase(BaseModel):
     order_index: int = 0
     description: str = ""
     language: str = "python"
+
+
+class ChapterCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=20)
+    title: str = Field(min_length=1, max_length=100)
+    language: str = Field(min_length=1, max_length=20, default="python")
+    order_index: int = 0
+    description: str = ""
+
+
+class ChapterUpdate(BaseModel):
+    code: Optional[str] = Field(default=None, min_length=1, max_length=20)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    language: Optional[str] = Field(default=None, min_length=1, max_length=20)
+    order_index: Optional[int] = None
+    description: Optional[str] = None
 
 
 class ChapterRead(ChapterBase):

@@ -2,7 +2,9 @@
   <div class="page">
     <div class="page-header">
       <h2>学习路线</h2>
-      <span class="hint">点知识点跳转到生成页</span>
+      <el-button type="primary" @click="onCreateChapter">
+        <el-icon><Plus /></el-icon><span>新建章节</span>
+      </el-button>
     </div>
 
     <el-row :gutter="16">
@@ -23,7 +25,7 @@
             :expand-on-click-node="false"
             :default-expand-all="false"
             highlight-current
-            empty-text="加载中..."
+            empty-text="该语言暂无章节，点击右上角新建"
             @node-click="onNodeClick"
           >
             <template #default="{ node, data }">
@@ -40,8 +42,45 @@
                   </el-tag>
                   {{ node.label }}
                 </span>
-                <span v-if="data.type === 'kp'" class="tree-actions">
-                  <el-button size="small" link type="primary">生成 →</el-button>
+
+                <!-- Hover actions -->
+                <span class="tree-actions" v-if="data.type === 'chapter'">
+                  <el-button
+                    size="small"
+                    link
+                    type="primary"
+                    @click.stop="onAddKP(data.raw)"
+                  >+ 知识点</el-button>
+                  <el-button
+                    size="small"
+                    link
+                    @click.stop="onEditChapter(data.raw)"
+                  >编辑</el-button>
+                  <el-button
+                    size="small"
+                    link
+                    type="danger"
+                    @click.stop="onDeleteChapter(data.raw)"
+                  >删除</el-button>
+                </span>
+                <span class="tree-actions" v-else>
+                  <el-button
+                    size="small"
+                    link
+                    type="primary"
+                    @click.stop="onGenerate(data.raw)"
+                  >生成 →</el-button>
+                  <el-button
+                    size="small"
+                    link
+                    @click.stop="onEditKP(data.raw)"
+                  >编辑</el-button>
+                  <el-button
+                    size="small"
+                    link
+                    type="danger"
+                    @click.stop="onDeleteKP(data.raw)"
+                  >删除</el-button>
                 </span>
               </span>
             </template>
@@ -79,22 +118,43 @@
             <el-icon><MagicStick /></el-icon>
             <span>用此知识点生成题目</span>
           </el-button>
+          <el-button @click="onEditKP(selectedKP)">
+            <el-icon><Edit /></el-icon><span>编辑</span>
+          </el-button>
         </el-card>
         <el-card shadow="never" v-else class="empty-card">
           <el-empty description="点击左侧某个知识点查看详情" />
         </el-card>
       </el-col>
     </el-row>
+
+    <ChapterDialog
+      v-model="chapterDialogVisible"
+      :editing="editingChapter"
+      :default-language="langStore.current"
+      @saved="onChapterSaved"
+    />
+
+    <KnowledgePointDialog
+      v-model="kpDialogVisible"
+      :chapter="kpDialogChapter"
+      :editing="editingKP"
+      @saved="onKPSaved"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { MagicStick } from '@element-plus/icons-vue'
+import { MagicStick, Plus, Edit } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { learningPathApi } from '@/api'
 import { useLanguageStore } from '@/stores/language'
-import type { ChapterWithKnowledgePoints } from '@/types/chapter'
+import type { Chapter, ChapterWithKnowledgePoints } from '@/types/chapter'
 import type { KnowledgePoint } from '@/types/knowledge_point'
+import ChapterDialog from '@/components/ChapterDialog.vue'
+import KnowledgePointDialog from '@/components/KnowledgePointDialog.vue'
 
 interface TreeNode {
   key: string
@@ -105,12 +165,20 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
+const router = useRouter()
 const langStore = useLanguageStore()
 const tree = ref<ChapterWithKnowledgePoints[]>([])
 const loading = ref(false)
 const filterText = ref('')
 const selectedKP = ref<KnowledgePoint | null>(null)
 const treeRef = ref()
+
+const chapterDialogVisible = ref(false)
+const editingChapter = ref<Chapter | null>(null)
+
+const kpDialogVisible = ref(false)
+const kpDialogChapter = ref<Chapter | null>(null)
+const editingKP = ref<KnowledgePoint | null>(null)
 
 const treeProps = { children: 'children', label: 'label' }
 
@@ -147,10 +215,6 @@ function onNodeClick(data: TreeNode) {
   }
 }
 
-onMounted(async () => {
-  await load()
-})
-
 async function load() {
   loading.value = true
   try {
@@ -164,14 +228,103 @@ watch(() => langStore.current, () => {
   selectedKP.value = null
   load()
 })
+
+// ===== Chapter actions =====
+
+function onCreateChapter() {
+  editingChapter.value = null
+  chapterDialogVisible.value = true
+}
+
+function onEditChapter(c: Chapter) {
+  editingChapter.value = c
+  chapterDialogVisible.value = true
+}
+
+async function onDeleteChapter(c: Chapter) {
+  let info: { knowledge_points: number; exercises: number }
+  try {
+    info = await learningPathApi.chapterCascadeInfo(c.id)
+  } catch {
+    return
+  }
+  const msg =
+    info.knowledge_points || info.exercises
+      ? `章节 "${c.title}" 下有 ${info.knowledge_points} 个知识点和 ${info.exercises} 道题目，` +
+        '删除章节将一并删除它们。此操作不可恢复，确定继续？'
+      : `确定删除章节 "${c.title}"？`
+  await ElMessageBox.confirm(msg, '删除确认', {
+    type: 'warning',
+    confirmButtonText: '确认删除',
+    confirmButtonClass: 'el-button--danger',
+  })
+  await learningPathApi.deleteChapter(c.id)
+  ElMessage.success('已删除')
+  if (selectedKP.value && tree.value
+      .find((ch) => ch.id === c.id)
+      ?.knowledge_points
+      ?.some((kp) => kp.id === selectedKP.value!.id)) {
+    selectedKP.value = null
+  }
+  load()
+}
+
+function onChapterSaved() {
+  load()
+}
+
+// ===== KP actions =====
+
+function onAddKP(c: Chapter) {
+  kpDialogChapter.value = c
+  editingKP.value = null
+  kpDialogVisible.value = true
+}
+
+function onEditKP(kp: KnowledgePoint) {
+  // Locate the parent chapter for context (used by the dialog header).
+  const parent = tree.value.find((c) => c.id === kp.chapter_id) as Chapter | undefined
+  kpDialogChapter.value = parent ?? null
+  editingKP.value = kp
+  kpDialogVisible.value = true
+}
+
+async function onDeleteKP(kp: KnowledgePoint) {
+  let info: { exercises: number }
+  try {
+    info = await learningPathApi.kpCascadeInfo(kp.id)
+  } catch {
+    return
+  }
+  const msg = info.exercises
+    ? `知识点 "${kp.title}" 下有 ${info.exercises} 道题目，删除将一并清除。确定继续？`
+    : `确定删除知识点 "${kp.title}"？`
+  await ElMessageBox.confirm(msg, '删除确认', {
+    type: 'warning',
+    confirmButtonText: '确认删除',
+    confirmButtonClass: 'el-button--danger',
+  })
+  await learningPathApi.deleteKP(kp.id)
+  ElMessage.success('已删除')
+  if (selectedKP.value?.id === kp.id) selectedKP.value = null
+  load()
+}
+
+function onKPSaved(saved: KnowledgePoint) {
+  if (selectedKP.value && selectedKP.value.id === saved.id) {
+    selectedKP.value = saved
+  }
+  load()
+}
+
+function onGenerate(kp: KnowledgePoint) {
+  router.push({ path: '/generate', query: { kp: kp.id } })
+}
+
+onMounted(load)
 </script>
 
 <style scoped>
-.hint {
-  color: #909399;
-  font-size: 13px;
-}
-
 .tree-node {
   flex: 1;
   display: flex;
@@ -184,6 +337,20 @@ watch(() => langStore.current, () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.tree-actions {
+  visibility: hidden;
+  display: flex;
+  gap: 4px;
+}
+
+:deep(.el-tree-node__content:hover) .tree-actions {
+  visibility: visible;
+}
+
+:deep(.el-tree-node.is-current > .el-tree-node__content) .tree-actions {
+  visibility: visible;
 }
 
 .kp-title {
