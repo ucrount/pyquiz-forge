@@ -17,7 +17,11 @@
         <el-input v-model="form.name" placeholder="例如 deepseek-default" />
       </el-form-item>
       <el-form-item label="Provider" prop="provider">
-        <el-select v-model="form.provider" style="width: 100%">
+        <el-select
+          v-model="form.provider"
+          style="width: 100%"
+          @change="onProviderChange"
+        >
           <el-option
             v-for="opt in PROVIDER_OPTIONS"
             :key="opt.value"
@@ -29,7 +33,7 @@
       <el-form-item label="API Key" prop="api_key">
         <el-input
           v-model="form.api_key"
-          :placeholder="isEdit ? '留空则保持原值' : 'sk-xxxxxxxx'"
+          :placeholder="apiKeyPlaceholder"
           type="password"
           show-password
         />
@@ -37,11 +41,14 @@
       <el-form-item label="API Base">
         <el-input
           v-model="form.api_base"
-          placeholder="https://api.deepseek.com/v1"
+          :placeholder="PROVIDER_DEFAULTS[form.provider].api_base"
         />
       </el-form-item>
       <el-form-item label="模型" prop="model">
-        <el-input v-model="form.model" placeholder="deepseek-chat" />
+        <el-input
+          v-model="form.model"
+          :placeholder="PROVIDER_DEFAULTS[form.provider].model"
+        />
       </el-form-item>
       <el-form-item label="Temperature">
         <el-slider
@@ -72,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, reactive } from 'vue'
+import { computed, ref, watch, reactive } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { llmConfigApi } from '@/api'
@@ -92,6 +99,16 @@ const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'saved'): void
 }>()
+
+// Per-provider sensible defaults — used as placeholders, AND auto-filled
+// when the user switches provider in a fresh form.
+const PROVIDER_DEFAULTS: Record<Provider, { api_base: string; model: string }> = {
+  openai:   { api_base: 'https://api.openai.com/v1',     model: 'gpt-4o-mini' },
+  deepseek: { api_base: 'https://api.deepseek.com/v1',   model: 'deepseek-chat' },
+  qwen:     { api_base: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
+  moonshot: { api_base: 'https://api.moonshot.cn/v1',    model: 'moonshot-v1-8k' },
+  claude:   { api_base: 'https://api.anthropic.com',     model: 'claude-sonnet-4-6' },
+}
 
 const visible = ref(props.modelValue)
 watch(
@@ -121,11 +138,24 @@ const form = reactive<FormState>({
   name: '',
   provider: 'deepseek',
   api_key: '',
-  api_base: 'https://api.deepseek.com/v1',
-  model: 'deepseek-chat',
+  api_base: PROVIDER_DEFAULTS.deepseek.api_base,
+  model: PROVIDER_DEFAULTS.deepseek.model,
   temperature: 0.7,
   max_tokens: 2048,
 })
+
+const apiKeyPlaceholder = computed(() => {
+  if (isEdit.value) return '留空则保持原值'
+  return form.provider === 'claude' ? 'sk-ant-xxxxxxxx' : 'sk-xxxxxxxx'
+})
+
+function onProviderChange(provider: Provider) {
+  // Only auto-update api_base/model when creating; don't clobber edits.
+  if (isEdit.value) return
+  const d = PROVIDER_DEFAULTS[provider]
+  form.api_base = d.api_base
+  form.model = d.model
+}
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -163,8 +193,8 @@ function initForm() {
       name: '',
       provider: 'deepseek',
       api_key: '',
-      api_base: 'https://api.deepseek.com/v1',
-      model: 'deepseek-chat',
+      api_base: PROVIDER_DEFAULTS.deepseek.api_base,
+      model: PROVIDER_DEFAULTS.deepseek.model,
       temperature: 0.7,
       max_tokens: 2048,
     })

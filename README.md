@@ -7,7 +7,7 @@
 - **后端**：Python 3.11 + FastAPI + SQLAlchemy 2.0 + Pydantic 2
 - **前端**：Vue 3 + Vite + TypeScript + Element Plus
 - **数据库**：SQLite（文件型，零运维）
-- **大模型**：兼容 OpenAI 协议（DeepSeek / OpenAI / Qwen / Moonshot 等），Claude 接口预留
+- **大模型**：兼容 OpenAI 协议（DeepSeek / OpenAI / Qwen / Moonshot）+ Anthropic Claude
 - **部署**：单 Docker 容器同时服务前后端
 
 ---
@@ -147,7 +147,9 @@ uvicorn app.main:app --port 8000
 ### 支持的 provider 取值
 
 - `openai` / `deepseek` / `qwen` / `moonshot` — 使用 OpenAI 兼容协议
-- `claude` — 接口预留，调用会返回 NotImplementedError（V2 实现）
+- `claude` — 使用 Anthropic Messages API
+
+新建配置时，前端会根据所选 provider 自动填充推荐的 `api_base` 和模型名（OpenAI 系填 `https://api.openai.com/v1`，Claude 填 `https://api.anthropic.com` + `claude-sonnet-4-6`）。
 
 ---
 
@@ -391,7 +393,7 @@ A：编辑 `app/data/learning_path.json`，重启服务即可（会做 upsert，
 
 ### Q5：怎么接 Claude？
 
-A：`app/llm/claude.py` 已经留好类结构。实现 `chat()` 方法即可：用 `anthropic` SDK，把 messages 转成 Claude 格式，再把响应映射到 `LLMResponse` 即可。
+A：在「大模型配置」新建一条，provider 选 `claude`，前端会自动填好 `api_base` 和 `model`。然后填你的 `sk-ant-...` API Key，激活即可。生成、评分、批量等所有功能都支持 Claude。
 
 ### Q6：API Key 怎么保护？
 
