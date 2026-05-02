@@ -1,5 +1,6 @@
 """Exercise schemas."""
 import json
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -52,6 +53,13 @@ class ExerciseRead(ExerciseBase):
     generation_log_id: Optional[int] = None
     status: ExerciseStatus = ExerciseStatus.published
 
+    # Scoring fields (None until POST /score is called)
+    score_overall: Optional[float] = None
+    score_detail: Dict[str, Any] = Field(default_factory=dict)
+    score_comment: str = ""
+    scored_at: Optional[datetime] = None
+    score_llm_config_id: Optional[int] = None
+
     @field_validator("test_cases", mode="before")
     @classmethod
     def _parse_test_cases(cls, v):
@@ -74,6 +82,17 @@ class ExerciseRead(ExerciseBase):
                 return {}
         return v or {}
 
+    @field_validator("score_detail", mode="before")
+    @classmethod
+    def _parse_score_detail(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v) if v else {}
+                return parsed if isinstance(parsed, dict) else {}
+            except json.JSONDecodeError:
+                return {}
+        return v or {}
+
 
 class ExerciseListItem(BaseModel):
     """Compact item for list endpoint."""
@@ -85,7 +104,9 @@ class ExerciseListItem(BaseModel):
     difficulty: Difficulty
     question_type: QuestionType
     status: ExerciseStatus
+    score_overall: Optional[float] = None
 
 
 class BulkDeleteRequest(BaseModel):
     ids: List[int] = Field(min_length=1)
+

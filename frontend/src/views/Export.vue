@@ -40,6 +40,19 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="最低分">
+          <el-input-number
+            v-model="filters.min_score"
+            :min="0"
+            :max="10"
+            :step="0.5"
+            :precision="1"
+            controls-position="right"
+            placeholder="（不限）"
+            style="width: 200px"
+          />
+          <span class="muted hint-tip">仅导出综合分 ≥ 此值的题目</span>
+        </el-form-item>
         <el-divider />
         <p class="match-info">
           <span>当前条件下匹配 </span>
@@ -87,12 +100,14 @@ interface Filters {
   knowledge_point_id: number | null
   difficulty: Difficulty | null
   question_type: QuestionType | null
+  min_score: number | null
 }
 
 const filters = reactive<Filters>({
   knowledge_point_id: null,
   difficulty: null,
   question_type: null,
+  min_score: null,
 })
 
 const matchCount = ref(0)
@@ -103,6 +118,7 @@ async function updateMatchCount() {
     knowledge_point_id: filters.knowledge_point_id ?? undefined,
     difficulty: filters.difficulty ?? undefined,
     question_type: filters.question_type ?? undefined,
+    min_score: filters.min_score ?? undefined,
     page: 1,
     size: 1,
   })
@@ -120,6 +136,7 @@ async function onExport(format: 'json' | 'markdown') {
       knowledge_point_id: filters.knowledge_point_id ?? undefined,
       difficulty: filters.difficulty ?? undefined,
       question_type: filters.question_type ?? undefined,
+      min_score: filters.min_score ?? undefined,
     }
     if (format === 'json') {
       await exportApi.json(params)
@@ -146,5 +163,14 @@ onMounted(updateMatchCount)
   padding: 12px 16px;
   border-radius: 4px;
   margin: 0 0 16px;
+}
+
+.muted {
+  color: #909399;
+  font-size: 13px;
+}
+
+.hint-tip {
+  margin-left: 12px;
 }
 </style>

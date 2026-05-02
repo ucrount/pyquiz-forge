@@ -16,6 +16,7 @@ interface ListParams {
   difficulty?: Difficulty
   question_type?: QuestionType
   status?: ExerciseStatus
+  min_score?: number
   page?: number
   size?: number
 }

@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,7 @@ def _get_exercises(
     difficulty: Optional[Difficulty],
     question_type: Optional[QuestionType],
     status: Optional[ExerciseStatus],
+    min_score: Optional[float],
 ):
     return crud_exercise.list_exercises_for_export(
         db,
@@ -27,6 +28,7 @@ def _get_exercises(
         difficulty=difficulty.value if difficulty else None,
         question_type=question_type.value if question_type else None,
         status=status.value if status else None,
+        min_score=min_score,
     )
 
 
@@ -36,9 +38,12 @@ def export_json(
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
     status: Optional[ExerciseStatus] = None,
+    min_score: Optional[float] = Query(None, ge=0, le=10),
     db: Session = Depends(get_db),
 ):
-    exercises = _get_exercises(db, knowledge_point_id, difficulty, question_type, status)
+    exercises = _get_exercises(
+        db, knowledge_point_id, difficulty, question_type, status, min_score
+    )
     body = export_service.export_json(db, exercises)
     fname = f"pyquiz-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
     return Response(
@@ -54,9 +59,12 @@ def export_markdown(
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
     status: Optional[ExerciseStatus] = None,
+    min_score: Optional[float] = Query(None, ge=0, le=10),
     db: Session = Depends(get_db),
 ):
-    exercises = _get_exercises(db, knowledge_point_id, difficulty, question_type, status)
+    exercises = _get_exercises(
+        db, knowledge_point_id, difficulty, question_type, status, min_score
+    )
     body = export_service.export_markdown(db, exercises)
     fname = f"pyquiz-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.md"
     return Response(

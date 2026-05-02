@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
 
 from app.core.database import SessionLocal, engine  # noqa: E402
 from app.core.logger import get_logger, setup_logging  # noqa: E402
+from app.core.migrations import ensure_columns  # noqa: E402
 from app.models import Base  # noqa: E402
 from app.services.seed_service import run_all_seeds  # noqa: E402
 
@@ -20,6 +21,7 @@ def main() -> None:
     logger = get_logger("init_db")
     logger.info("Creating tables ...")
     Base.metadata.create_all(bind=engine)
+    ensure_columns(engine)
     db = SessionLocal()
     try:
         run_all_seeds(db)

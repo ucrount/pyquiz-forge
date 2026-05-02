@@ -5,6 +5,13 @@ export interface TestCase {
   expected_output: string
 }
 
+export interface ScoreDimensions {
+  clarity: number
+  correctness: number
+  difficulty_match: number
+  educational_value: number
+}
+
 export interface Exercise {
   id: number
   title: string
@@ -24,6 +31,13 @@ export interface Exercise {
   llm_config_id: number | null
   generation_log_id: number | null
   status: ExerciseStatus
+
+  // Scoring (null until /score is called)
+  score_overall: number | null
+  score_detail: Partial<ScoreDimensions>
+  score_comment: string
+  scored_at: string | null
+  score_llm_config_id: number | null
 }
 
 export interface ExerciseListItem {
@@ -33,6 +47,7 @@ export interface ExerciseListItem {
   difficulty: Difficulty
   question_type: QuestionType
   status: ExerciseStatus
+  score_overall: number | null
 }
 
 export interface ExerciseUpdate {

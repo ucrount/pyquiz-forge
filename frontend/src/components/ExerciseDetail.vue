@@ -12,10 +12,48 @@
         <el-tag v-if="exercise.status" size="small" effect="plain" type="info">
           {{ statusLabel }}
         </el-tag>
+        <ScoreBadge :value="exercise.score_overall" />
       </div>
     </div>
 
     <el-divider />
+
+    <!-- Score block (if scored) -->
+    <Section
+      v-if="exercise.score_overall !== null && exercise.score_overall !== undefined"
+      title="质量评分"
+    >
+      <div class="score-block">
+        <div class="score-grid">
+          <div class="score-item primary">
+            <span class="score-label">综合</span>
+            <strong class="score-value">{{ formatScore(exercise.score_overall) }}</strong>
+          </div>
+          <div class="score-item">
+            <span class="score-label">清晰度</span>
+            <strong class="score-value">{{ formatScore(exercise.score_detail?.clarity) }}</strong>
+          </div>
+          <div class="score-item">
+            <span class="score-label">正确性</span>
+            <strong class="score-value">{{ formatScore(exercise.score_detail?.correctness) }}</strong>
+          </div>
+          <div class="score-item">
+            <span class="score-label">难度匹配</span>
+            <strong class="score-value">{{ formatScore(exercise.score_detail?.difficulty_match) }}</strong>
+          </div>
+          <div class="score-item">
+            <span class="score-label">教学价值</span>
+            <strong class="score-value">{{ formatScore(exercise.score_detail?.educational_value) }}</strong>
+          </div>
+        </div>
+        <p v-if="exercise.score_comment" class="score-comment">
+          <strong>评语：</strong>{{ exercise.score_comment }}
+        </p>
+        <p v-if="exercise.scored_at" class="score-meta">
+          评于 {{ formatDateTime(exercise.scored_at) }}
+        </p>
+      </div>
+    </Section>
 
     <!-- Description -->
     <Section title="题目描述">
@@ -85,9 +123,11 @@
 import { computed, h } from 'vue'
 import type { Exercise } from '@/types/exercise'
 import { EXERCISE_STATUS_LABEL, type ExerciseStatus } from '@/types/common'
+import { formatDateTime } from '@/utils/format'
 import DifficultyTag from './DifficultyTag.vue'
 import QuestionTypeTag from './QuestionTypeTag.vue'
 import CodeBlock from './CodeBlock.vue'
+import ScoreBadge from './ScoreBadge.vue'
 
 const props = defineProps<{ exercise: Exercise | null }>()
 
@@ -97,6 +137,11 @@ const statusLabel = computed(
     props.exercise?.status ??
     '',
 )
+
+function formatScore(v: number | null | undefined): string {
+  if (v === null || v === undefined || isNaN(Number(v))) return '-'
+  return Number(v).toFixed(1)
+}
 
 interface ChoiceOption {
   label: string
@@ -218,5 +263,61 @@ const Section = (_props: any, { slots, attrs }: any) =>
 
 .opts li {
   padding: 4px 0;
+}
+
+.score-block {
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border-radius: 4px;
+  padding: 8px 4px;
+}
+
+.score-item.primary {
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+}
+
+.score-item.primary .score-label,
+.score-item.primary .score-value {
+  color: #fff;
+}
+
+.score-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.score-value {
+  font-size: 18px;
+  color: #303133;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.score-comment {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #303133;
+}
+
+.score-meta {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
 }
 </style>

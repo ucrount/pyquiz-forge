@@ -65,6 +65,7 @@ def list_exercises(
     difficulty: Optional[str] = None,
     question_type: Optional[str] = None,
     status: Optional[str] = None,
+    min_score: Optional[float] = None,
     page: int = 1,
     size: int = 20,
 ) -> Tuple[List[Exercise], int]:
@@ -80,6 +81,8 @@ def list_exercises(
         filters.append(Exercise.question_type == question_type)
     if status:
         filters.append(Exercise.status == status)
+    if min_score is not None:
+        filters.append(Exercise.score_overall >= min_score)
 
     for f in filters:
         stmt = stmt.where(f)
@@ -98,6 +101,7 @@ def list_exercises_for_export(
     difficulty: Optional[str] = None,
     question_type: Optional[str] = None,
     status: Optional[str] = None,
+    min_score: Optional[float] = None,
 ) -> List[Exercise]:
     stmt = select(Exercise)
     if knowledge_point_id is not None:
@@ -108,6 +112,8 @@ def list_exercises_for_export(
         stmt = stmt.where(Exercise.question_type == question_type)
     if status:
         stmt = stmt.where(Exercise.status == status)
+    if min_score is not None:
+        stmt = stmt.where(Exercise.score_overall >= min_score)
     stmt = stmt.order_by(Exercise.knowledge_point_id, Exercise.difficulty, Exercise.id)
     return list(db.execute(stmt).scalars().all())
 

@@ -49,6 +49,18 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="最低分">
+          <el-input-number
+            v-model="filters.min_score"
+            :min="0"
+            :max="10"
+            :step="0.5"
+            :precision="1"
+            controls-position="right"
+            placeholder="（不限）"
+            style="width: 130px"
+          />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="onSearch">查询</el-button>
           <el-button @click="onReset">重置</el-button>
@@ -60,6 +72,9 @@
     <el-card shadow="never">
       <div class="bulk-bar" v-if="selectedIds.length">
         <span>已选 {{ selectedIds.length }} 项</span>
+        <el-button size="small" type="primary" :loading="batchScoring" @click="onBulkScore">
+          批量评分
+        </el-button>
         <el-button size="small" type="danger" @click="onBulkDelete">
           批量删除
         </el-button>
@@ -85,7 +100,12 @@
         <el-table-column label="知识点" width="100">
           <template #default="{ row }">#{{ row.knowledge_point_id }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="评分" width="100" align="center">
+          <template #default="{ row }">
+            <ScoreBadge :value="row.score_overall" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button size="small" link type="primary" @click.stop="openDetail(row.id, false)">
               详情
@@ -93,8 +113,17 @@
             <el-button size="small" link type="primary" @click.stop="openDetail(row.id, true)">
               编辑
             </el-button>
+            <el-button
+              size="small"
+              link
+              type="success"
+              :loading="scoringIds.has(row.id)"
+              @click.stop="onScore(row)"
+            >
+              评分
+            </el-button>
             <el-button size="small" link @click.stop="onRegenerate(row)">
-              重新生成
+              重生
             </el-button>
             <el-button size="small" link type="danger" @click.stop="onDelete(row)">
               删除
@@ -126,14 +155,24 @@
       <template #header>
         <div class="drawer-header">
           <span class="drawer-title">{{ drawerTitle }}</span>
-          <el-button
-            v-if="detailExercise && !editMode"
-            size="small"
-            type="primary"
-            @click="editMode = true"
-          >
-            <el-icon><Edit /></el-icon><span>编辑</span>
-          </el-button>
+          <div v-if="detailExercise && !editMode" class="drawer-actions">
+            <el-button
+              size="small"
+              type="success"
+              :loading="detailScoring"
+              @click="onScoreCurrent"
+            >
+              <el-icon><StarFilled /></el-icon>
+              <span>{{ detailExercise.score_overall === null ? '评分' : '重新评分' }}</span>
+            </el-button>
+            <el-button
+              size="small"
+              type="primary"
+              @click="editMode = true"
+            >
+              <el-icon><Edit /></el-icon><span>编辑</span>
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -154,8 +193,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { MagicStick, Edit } from '@element-plus/icons-vue'
-import { exerciseApi, generationApi } from '@/api'
+import { MagicStick, Edit, StarFilled } from '@element-plus/icons-vue'
+import { exerciseApi, generationApi, scoringApi } from '@/api'
 import {
   DIFFICULTY_OPTIONS,
   QUESTION_TYPE_OPTIONS,
@@ -166,6 +205,7 @@ import type { Exercise, ExerciseListItem } from '@/types/exercise'
 import KnowledgePointPicker from '@/components/KnowledgePointPicker.vue'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import QuestionTypeTag from '@/components/QuestionTypeTag.vue'
+import ScoreBadge from '@/components/ScoreBadge.vue'
 import ExerciseDetail from '@/components/ExerciseDetail.vue'
 import ExerciseEditor from '@/components/ExerciseEditor.vue'
 
@@ -173,6 +213,7 @@ interface Filters {
   knowledge_point_id: number | null
   difficulty: Difficulty | null
   question_type: QuestionType | null
+  min_score: number | null
   page: number
   size: number
 }
@@ -181,6 +222,7 @@ const filters = reactive<Filters>({
   knowledge_point_id: null,
   difficulty: null,
   question_type: null,
+  min_score: null,
   page: 1,
   size: 20,
 })
@@ -189,6 +231,9 @@ const items = ref<ExerciseListItem[]>([])
 const total = ref(0)
 const loading = ref(false)
 const selectedIds = ref<number[]>([])
+const scoringIds = ref(new Set<number>())
+const batchScoring = ref(false)
+const detailScoring = ref(false)
 
 const detailVisible = ref(false)
 const detailExercise = ref<Exercise | null>(null)
@@ -208,6 +253,7 @@ async function load() {
       knowledge_point_id: filters.knowledge_point_id ?? undefined,
       difficulty: filters.difficulty ?? undefined,
       question_type: filters.question_type ?? undefined,
+      min_score: filters.min_score ?? undefined,
       page: filters.page,
       size: filters.size,
     })
@@ -227,6 +273,7 @@ function onReset() {
   filters.knowledge_point_id = null
   filters.difficulty = null
   filters.question_type = null
+  filters.min_score = null
   filters.page = 1
   load()
 }
@@ -288,6 +335,61 @@ async function onRegenerate(row: ExerciseListItem) {
   }
 }
 
+async function onScore(row: ExerciseListItem) {
+  scoringIds.value.add(row.id)
+  try {
+    const updated = await scoringApi.score(row.id)
+    // Update the row in-place so the badge refreshes without a full reload.
+    const idx = items.value.findIndex((i) => i.id === row.id)
+    if (idx >= 0) {
+      items.value[idx] = {
+        ...items.value[idx],
+        score_overall: updated.score_overall,
+      }
+    }
+    ElMessage.success(
+      `已评分：综合 ${updated.score_overall?.toFixed(1) ?? '-'}`,
+    )
+  } finally {
+    scoringIds.value.delete(row.id)
+  }
+}
+
+async function onBulkScore() {
+  if (!selectedIds.value.length) return
+  await ElMessageBox.confirm(
+    `对选中的 ${selectedIds.value.length} 道题逐题评分？\n（每题约 5-15 秒，请耐心等待）`,
+    '批量评分',
+    { type: 'info' },
+  )
+  batchScoring.value = true
+  try {
+    const r = await scoringApi.scoreBatch(selectedIds.value)
+    ElMessage.success(
+      `成功 ${r.succeeded.length} / 失败 ${r.failed.length}`,
+    )
+    load()
+  } finally {
+    batchScoring.value = false
+  }
+}
+
+async function onScoreCurrent() {
+  if (!detailExercise.value) return
+  detailScoring.value = true
+  try {
+    const updated = await scoringApi.score(detailExercise.value.id)
+    detailExercise.value = updated
+    // Refresh list so the badge in the table updates too
+    load()
+    ElMessage.success(
+      `已评分：综合 ${updated.score_overall?.toFixed(1) ?? '-'}`,
+    )
+  } finally {
+    detailScoring.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -318,6 +420,11 @@ onMounted(load)
   align-items: center;
   width: 100%;
   padding-right: 24px;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .drawer-title {

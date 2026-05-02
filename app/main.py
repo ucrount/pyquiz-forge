@@ -12,6 +12,7 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
 from app.core.logger import get_logger, setup_logging
+from app.core.migrations import ensure_columns
 from app.models import Base
 from app.services.seed_service import run_all_seeds
 
@@ -27,6 +28,7 @@ ASSETS_DIR = STATIC_DIR / "assets"
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s ...", settings.app_name, __version__)
     Base.metadata.create_all(bind=engine)
+    ensure_columns(engine)  # idempotent additive migration for existing DBs
     db = SessionLocal()
     try:
         run_all_seeds(db)

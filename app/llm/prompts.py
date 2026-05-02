@@ -102,3 +102,132 @@ def build_messages(
             ),
         },
     ]
+
+
+# ==========================================================================
+# Scoring (quality evaluation of an existing exercise)
+# ==========================================================================
+
+SCORE_SYSTEM_PROMPT = """\
+你是一名严格的 Python 教学评审专家。你的任务是评估一道 Python 练习题的整体质量，给出 1-10 分（可保留一位小数）的多维评分和总评。
+
+要求：
+1. 客观、严格，不要为了讨好作者打高分；
+2. 输出必须是合法 JSON，且只输出 JSON，不要任何解释、Markdown 代码块标记；
+3. 所有维度都给分，缺失的字段给较低分；
+4. 评语用中文，简短直接，指出具体问题或亮点。
+"""
+
+
+SCORE_JSON_TEMPLATE = """\
+{
+  "overall": 8.5,
+  "scores": {
+    "clarity": 9,
+    "correctness": 8,
+    "difficulty_match": 8,
+    "educational_value": 9
+  },
+  "comment": "题目清晰、代码可运行；但易错点列得太抽象，建议补充具体边界值示例。"
+}\
+"""
+
+
+def _format_test_cases(test_cases: list) -> str:
+    if not test_cases:
+        return "（无）"
+    out = []
+    for i, tc in enumerate(test_cases, start=1):
+        if isinstance(tc, dict):
+            out.append(
+                f"  {i}. 输入: {tc.get('input', '')!r} → 期望: {tc.get('expected_output', '')!r}"
+            )
+    return "\n".join(out) if out else "（无）"
+
+
+def render_score_user_prompt(
+    *,
+    title: str,
+    chapter_title: str,
+    kp_title: str,
+    difficulty: str,
+    question_type: str,
+    description: str,
+    standard_answer: str,
+    reference_code: str,
+    test_cases: list,
+    explanation: str,
+    common_mistakes: str,
+) -> str:
+    return f"""请对以下 Python 练习题打分。
+
+【知识点】{chapter_title} / {kp_title}
+【请求难度】{difficulty}
+【题型】{question_type}
+【题目标题】{title}
+
+【题目描述】
+{description or '（无）'}
+
+【标准答案】
+{standard_answer or '（无）'}
+
+【参考代码】
+{reference_code or '（无）'}
+
+【测试用例】
+{_format_test_cases(test_cases)}
+
+【解析】
+{explanation or '（无）'}
+
+【易错点】
+{common_mistakes or '（无）'}
+
+评分维度（每项 1-10 分，可保留一位小数）：
+- clarity（清晰度）：题干是否表述清楚、无歧义
+- correctness（正确性）：标准答案与参考代码是否真的可运行、能解决问题；测试用例是否真实合理
+- difficulty_match（难度匹配）：实际难度是否与「请求难度」一致
+- educational_value（教学价值）：是否能让学习者掌握该知识点；解析与易错点是否有帮助
+
+请按以下 JSON 格式严格输出：
+
+{SCORE_JSON_TEMPLATE}
+
+只输出 JSON，不要任何额外文字。"""
+
+
+def build_score_messages(
+    *,
+    title: str,
+    chapter_title: str,
+    kp_title: str,
+    difficulty: str,
+    question_type: str,
+    description: str,
+    standard_answer: str,
+    reference_code: str,
+    test_cases: list,
+    explanation: str,
+    common_mistakes: str,
+) -> List[dict]:
+    return [
+        {"role": "system", "content": SCORE_SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": render_score_user_prompt(
+                title=title,
+                chapter_title=chapter_title,
+                kp_title=kp_title,
+                difficulty=difficulty,
+                question_type=question_type,
+                description=description,
+                standard_answer=standard_answer,
+                reference_code=reference_code,
+                test_cases=test_cases,
+                explanation=explanation,
+                common_mistakes=common_mistakes,
+            ),
+        },
+    ]
+

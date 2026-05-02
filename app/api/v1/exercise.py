@@ -23,6 +23,7 @@ def list_exercises(
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
     status: Optional[ExerciseStatus] = None,
+    min_score: Optional[float] = Query(None, ge=0, le=10),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -33,6 +34,7 @@ def list_exercises(
         difficulty=difficulty.value if difficulty else None,
         question_type=question_type.value if question_type else None,
         status=status.value if status else None,
+        min_score=min_score,
         page=page,
         size=size,
     )
