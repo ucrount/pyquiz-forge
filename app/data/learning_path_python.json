@@ -1,6 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "language": "python",
+  "language_label": "Python",
   "chapters": [
     {
       "code": "ch01",

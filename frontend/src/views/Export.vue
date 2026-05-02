@@ -94,7 +94,10 @@ import {
   type Difficulty,
   type QuestionType,
 } from '@/types/common'
+import { useLanguageStore } from '@/stores/language'
 import KnowledgePointPicker from '@/components/KnowledgePointPicker.vue'
+
+const langStore = useLanguageStore()
 
 interface Filters {
   knowledge_point_id: number | null
@@ -116,6 +119,7 @@ const downloading = ref<'json' | 'markdown' | ''>('')
 async function updateMatchCount() {
   const r = await exerciseApi.list({
     knowledge_point_id: filters.knowledge_point_id ?? undefined,
+    language: langStore.current,
     difficulty: filters.difficulty ?? undefined,
     question_type: filters.question_type ?? undefined,
     min_score: filters.min_score ?? undefined,
@@ -134,6 +138,7 @@ async function onExport(format: 'json' | 'markdown') {
   try {
     const params = {
       knowledge_point_id: filters.knowledge_point_id ?? undefined,
+      language: langStore.current,
       difficulty: filters.difficulty ?? undefined,
       question_type: filters.question_type ?? undefined,
       min_score: filters.min_score ?? undefined,
@@ -150,6 +155,10 @@ async function onExport(format: 'json' | 'markdown') {
 }
 
 watch(filters, updateMatchCount, { deep: true })
+watch(() => langStore.current, () => {
+  filters.knowledge_point_id = null
+  updateMatchCount()
+})
 onMounted(updateMatchCount)
 </script>
 

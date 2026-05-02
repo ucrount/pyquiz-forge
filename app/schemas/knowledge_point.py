@@ -10,6 +10,7 @@ class KnowledgePointBase(BaseModel):
     title: str
     order_index: int = 0
     description: str = ""
+    language: str = "python"
 
 
 class KnowledgePointRead(KnowledgePointBase):

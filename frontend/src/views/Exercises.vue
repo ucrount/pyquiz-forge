@@ -191,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MagicStick, Edit, StarFilled } from '@element-plus/icons-vue'
 import { exerciseApi, generationApi, scoringApi } from '@/api'
@@ -202,12 +202,15 @@ import {
   type QuestionType,
 } from '@/types/common'
 import type { Exercise, ExerciseListItem } from '@/types/exercise'
+import { useLanguageStore } from '@/stores/language'
 import KnowledgePointPicker from '@/components/KnowledgePointPicker.vue'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import QuestionTypeTag from '@/components/QuestionTypeTag.vue'
 import ScoreBadge from '@/components/ScoreBadge.vue'
 import ExerciseDetail from '@/components/ExerciseDetail.vue'
 import ExerciseEditor from '@/components/ExerciseEditor.vue'
+
+const langStore = useLanguageStore()
 
 interface Filters {
   knowledge_point_id: number | null
@@ -251,6 +254,7 @@ async function load() {
   try {
     const r = await exerciseApi.list({
       knowledge_point_id: filters.knowledge_point_id ?? undefined,
+      language: langStore.current,
       difficulty: filters.difficulty ?? undefined,
       question_type: filters.question_type ?? undefined,
       min_score: filters.min_score ?? undefined,
@@ -263,6 +267,13 @@ async function load() {
     loading.value = false
   }
 }
+
+watch(() => langStore.current, () => {
+  // language switched — reset KP filter (likely for the wrong language) + reload
+  filters.knowledge_point_id = null
+  filters.page = 1
+  load()
+})
 
 function onSearch() {
   filters.page = 1

@@ -1,3 +1,5 @@
+import type { Language } from './common'
+
 export interface KnowledgePoint {
   id: number
   chapter_id: number
@@ -6,4 +8,5 @@ export interface KnowledgePoint {
   order_index: number
   keywords: string[]
   description: string
+  language: Language | string
 }

@@ -17,6 +17,7 @@ router = APIRouter(prefix="/export", tags=["export"])
 def _get_exercises(
     db: Session,
     knowledge_point_id: Optional[int],
+    language: Optional[str],
     difficulty: Optional[Difficulty],
     question_type: Optional[QuestionType],
     status: Optional[ExerciseStatus],
@@ -25,6 +26,7 @@ def _get_exercises(
     return crud_exercise.list_exercises_for_export(
         db,
         knowledge_point_id=knowledge_point_id,
+        language=language,
         difficulty=difficulty.value if difficulty else None,
         question_type=question_type.value if question_type else None,
         status=status.value if status else None,
@@ -35,6 +37,7 @@ def _get_exercises(
 @router.get("/json")
 def export_json(
     knowledge_point_id: Optional[int] = None,
+    language: Optional[str] = None,
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
     status: Optional[ExerciseStatus] = None,
@@ -42,7 +45,7 @@ def export_json(
     db: Session = Depends(get_db),
 ):
     exercises = _get_exercises(
-        db, knowledge_point_id, difficulty, question_type, status, min_score
+        db, knowledge_point_id, language, difficulty, question_type, status, min_score
     )
     body = export_service.export_json(db, exercises)
     fname = f"pyquiz-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
@@ -56,6 +59,7 @@ def export_json(
 @router.get("/markdown")
 def export_markdown(
     knowledge_point_id: Optional[int] = None,
+    language: Optional[str] = None,
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
     status: Optional[ExerciseStatus] = None,
@@ -63,7 +67,7 @@ def export_markdown(
     db: Session = Depends(get_db),
 ):
     exercises = _get_exercises(
-        db, knowledge_point_id, difficulty, question_type, status, min_score
+        db, knowledge_point_id, language, difficulty, question_type, status, min_score
     )
     body = export_service.export_markdown(db, exercises)
     fname = f"pyquiz-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.md"

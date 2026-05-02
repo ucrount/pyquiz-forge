@@ -11,6 +11,9 @@ class Chapter(Base):
     __tablename__ = "chapters"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    language: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="python", index=True
+    )
     code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -23,4 +26,4 @@ class Chapter(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Chapter {self.code} {self.title}>"
+        return f"<Chapter {self.language}/{self.code} {self.title}>"

@@ -1,8 +1,15 @@
-"""Seed service: load learning_path.json into DB on startup (idempotent)."""
+"""Seed service: load learning_path_*.json files into DB on startup (idempotent).
+
+Each language has its own file `learning_path_<lang>.json` with a top-level
+`language` field. Codes inside each file are global identifiers and should
+already be language-prefixed (e.g. `py-ch01`, `java-ch01`). This module
+upserts chapters + knowledge points by code.
+"""
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -11,31 +18,35 @@ from app.core.logger import get_logger
 from app.crud import chapter as crud_chapter
 from app.crud import knowledge_point as crud_kp
 from app.crud import llm_config as crud_llm
-from app.models import LLMConfig
 from app.schemas.llm_config import LLMConfigCreate
 
 logger = get_logger(__name__)
 
-LEARNING_PATH_FILE = Path(__file__).resolve().parent.parent / "data" / "learning_path.json"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
-def seed_learning_path(db: Session) -> None:
-    """Idempotent: upserts chapters and knowledge points by code."""
-    if not LEARNING_PATH_FILE.exists():
-        logger.warning("learning_path.json not found at %s", LEARNING_PATH_FILE)
-        return
-
-    data = json.loads(LEARNING_PATH_FILE.read_text(encoding="utf-8"))
+def _seed_one_language_file(db: Session, path: Path) -> tuple[int, int]:
+    """Seed a single language file. Returns (chap_added, kp_added)."""
+    data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+    language = (data.get("language") or "").strip()
+    if not language:
+        logger.warning(
+            "Skipping %s — no top-level 'language' field.", path.name
+        )
+        return 0, 0
 
     chapters = data.get("chapters", [])
     chap_count = 0
     kp_count = 0
+
     for ch_idx, ch in enumerate(chapters):
-        existing = crud_chapter.get_chapter_by_code(db, ch["code"])
+        code = ch["code"]
+        existing = crud_chapter.get_chapter_by_code(db, code)
         if existing is None:
             chapter = crud_chapter.create_chapter(
                 db,
-                code=ch["code"],
+                language=language,
+                code=code,
                 title=ch["title"],
                 order_index=ch.get("order_index", ch_idx),
                 description=ch.get("description", ""),
@@ -43,19 +54,21 @@ def seed_learning_path(db: Session) -> None:
             chap_count += 1
         else:
             chapter = existing
-            # Update title/order/desc if changed
+            chapter.language = language
             chapter.title = ch["title"]
             chapter.order_index = ch.get("order_index", chapter.order_index)
             chapter.description = ch.get("description", chapter.description)
 
         for kp_idx, kp in enumerate(ch.get("knowledge_points", [])):
-            existing_kp = crud_kp.get_kp_by_code(db, kp["code"])
+            kp_code = kp["code"]
+            existing_kp = crud_kp.get_kp_by_code(db, kp_code)
             keywords_json = json.dumps(kp.get("keywords", []), ensure_ascii=False)
             if existing_kp is None:
                 crud_kp.create_kp(
                     db,
                     chapter_id=chapter.id,
-                    code=kp["code"],
+                    language=language,
+                    code=kp_code,
                     title=kp["title"],
                     order_index=kp.get("order_index", kp_idx),
                     keywords=keywords_json,
@@ -64,16 +77,44 @@ def seed_learning_path(db: Session) -> None:
                 kp_count += 1
             else:
                 existing_kp.chapter_id = chapter.id
+                existing_kp.language = language
                 existing_kp.title = kp["title"]
                 existing_kp.order_index = kp.get("order_index", existing_kp.order_index)
                 existing_kp.keywords = keywords_json
                 existing_kp.description = kp.get("description", existing_kp.description)
 
+    return chap_count, kp_count
+
+
+def seed_learning_path(db: Session) -> None:
+    """Idempotent: walk app/data/learning_path_*.json and upsert each."""
+    files = sorted(DATA_DIR.glob("learning_path_*.json"))
+    if not files:
+        logger.warning(
+            "No learning_path_*.json files found in %s — skipping seed.",
+            DATA_DIR,
+        )
+        return
+
+    total_ch, total_kp = 0, 0
+    for f in files:
+        try:
+            ch, kp = _seed_one_language_file(db, f)
+        except Exception as e:
+            logger.error("Failed to seed %s: %s", f.name, e)
+            continue
+        if ch or kp:
+            logger.info(
+                "Seeded %s: +%d chapters, +%d knowledge points",
+                f.name, ch, kp,
+            )
+        total_ch += ch
+        total_kp += kp
+
     db.commit()
     logger.info(
-        "Learning path seeded: +%d chapters, +%d knowledge points (existing rows updated).",
-        chap_count,
-        kp_count,
+        "Learning path seeded across %d files: +%d chapters, +%d knowledge points total.",
+        len(files), total_ch, total_kp,
     )
 
 

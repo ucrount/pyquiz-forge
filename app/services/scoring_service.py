@@ -96,6 +96,7 @@ def score_one(
 
     chapter_title = ex.knowledge_point.chapter.title if ex.knowledge_point and ex.knowledge_point.chapter else ""
     kp_title = ex.knowledge_point.title if ex.knowledge_point else ""
+    language = ex.language or "python"
 
     messages = build_score_messages(
         title=ex.title,
@@ -109,6 +110,7 @@ def score_one(
         test_cases=test_cases,
         explanation=ex.explanation,
         common_mistakes=ex.common_mistakes,
+        language=language,
     )
 
     client = build_llm_client(cfg)

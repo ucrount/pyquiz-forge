@@ -7,10 +7,18 @@ from sqlalchemy.orm import Session
 from app.models import KnowledgePoint
 
 
-def list_kps(db: Session, chapter_id: Optional[int] = None) -> List[KnowledgePoint]:
-    stmt = select(KnowledgePoint).order_by(KnowledgePoint.order_index)
+def list_kps(
+    db: Session,
+    chapter_id: Optional[int] = None,
+    language: Optional[str] = None,
+) -> List[KnowledgePoint]:
+    stmt = select(KnowledgePoint).order_by(
+        KnowledgePoint.language, KnowledgePoint.order_index
+    )
     if chapter_id is not None:
         stmt = stmt.where(KnowledgePoint.chapter_id == chapter_id)
+    if language:
+        stmt = stmt.where(KnowledgePoint.language == language)
     return list(db.execute(stmt).scalars().all())
 
 

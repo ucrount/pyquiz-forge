@@ -1,0 +1,78 @@
+{
+  "version": 2,
+  "language": "go",
+  "language_label": "Go",
+  "chapters": [
+    {
+      "code": "go-ch01",
+      "title": "Go 基础",
+      "order_index": 1,
+      "description": "Go 语法入门",
+      "knowledge_points": [
+        {"code": "go-1.1", "title": "Go 简介与环境", "order_index": 1, "keywords": ["go", "go mod", "GOPATH", "GOROOT"], "description": "Go 历史、安装、go mod 工作流"},
+        {"code": "go-1.2", "title": "变量与基本类型", "order_index": 2, "keywords": ["var", ":=", "int", "float64", "bool", "string"], "description": "声明方式与基本类型"},
+        {"code": "go-1.3", "title": "运算符", "order_index": 3, "keywords": ["+", "-", "*", "/", "%", "==", "&&", "||"], "description": "算术、比较、逻辑运算符"},
+        {"code": "go-1.4", "title": "fmt 输入输出", "order_index": 4, "keywords": ["fmt.Println", "fmt.Printf", "fmt.Scan"], "description": "fmt 包的输入输出"}
+      ]
+    },
+    {
+      "code": "go-ch02",
+      "title": "流程控制",
+      "order_index": 2,
+      "description": "条件、循环、defer",
+      "knowledge_points": [
+        {"code": "go-2.1", "title": "if 与 switch", "order_index": 1, "keywords": ["if", "else", "switch", "case", "fallthrough"], "description": "条件分支（含 if 短语句）"},
+        {"code": "go-2.2", "title": "for 循环", "order_index": 2, "keywords": ["for", "range", "break", "continue"], "description": "Go 唯一的循环语句 for"},
+        {"code": "go-2.3", "title": "defer 延迟调用", "order_index": 3, "keywords": ["defer", "栈式", "资源释放"], "description": "defer 的执行顺序与典型用法"}
+      ]
+    },
+    {
+      "code": "go-ch03",
+      "title": "数据结构",
+      "order_index": 3,
+      "description": "数组、切片、map",
+      "knowledge_points": [
+        {"code": "go-3.1", "title": "数组与切片 slice", "order_index": 1, "keywords": ["[]", "append", "len", "cap", "make"], "description": "底层数组与切片视图"},
+        {"code": "go-3.2", "title": "map 映射", "order_index": 2, "keywords": ["map", "make", "delete", "ok 模式"], "description": "map 创建、增删查"},
+        {"code": "go-3.3", "title": "字符串与 rune", "order_index": 3, "keywords": ["string", "byte", "rune", "strings", "strconv"], "description": "字符串与 UTF-8 处理"},
+        {"code": "go-3.4", "title": "结构体 struct", "order_index": 4, "keywords": ["struct", "字段标签", "嵌入"], "description": "struct 与匿名嵌入"}
+      ]
+    },
+    {
+      "code": "go-ch04",
+      "title": "函数与方法",
+      "order_index": 4,
+      "description": "函数、方法、接口",
+      "knowledge_points": [
+        {"code": "go-4.1", "title": "函数定义与多返回值", "order_index": 1, "keywords": ["func", "多返回值", "命名返回值"], "description": "函数声明、多返回值、可变参数"},
+        {"code": "go-4.2", "title": "方法 method", "order_index": 2, "keywords": ["receiver", "值接收者", "指针接收者"], "description": "为类型定义方法"},
+        {"code": "go-4.3", "title": "接口 interface", "order_index": 3, "keywords": ["interface", "隐式实现", "空接口", "类型断言"], "description": "接口与隐式实现"},
+        {"code": "go-4.4", "title": "错误处理", "order_index": 4, "keywords": ["error", "errors.New", "fmt.Errorf", "errors.Is"], "description": "Go 风格错误处理"}
+      ]
+    },
+    {
+      "code": "go-ch05",
+      "title": "并发编程",
+      "order_index": 5,
+      "description": "Go 最大特色 — 协程与通道",
+      "knowledge_points": [
+        {"code": "go-5.1", "title": "goroutine", "order_index": 1, "keywords": ["go 关键字", "协程", "调度"], "description": "go 关键字启动协程"},
+        {"code": "go-5.2", "title": "channel 通道", "order_index": 2, "keywords": ["chan", "<-", "缓冲通道", "close"], "description": "通道发送、接收、关闭"},
+        {"code": "go-5.3", "title": "select 多路复用", "order_index": 3, "keywords": ["select", "case", "超时", "default"], "description": "select 监听多个通道"},
+        {"code": "go-5.4", "title": "sync 同步原语", "order_index": 4, "keywords": ["sync.Mutex", "sync.WaitGroup", "sync.Once"], "description": "锁、等待组、Once"}
+      ]
+    },
+    {
+      "code": "go-ch06",
+      "title": "工程实践",
+      "order_index": 6,
+      "description": "标准库与项目组织",
+      "knowledge_points": [
+        {"code": "go-6.1", "title": "标准库常用包", "order_index": 1, "keywords": ["fmt", "os", "io", "encoding/json", "net/http"], "description": "高频标准库"},
+        {"code": "go-6.2", "title": "go test 单元测试", "order_index": 2, "keywords": ["testing", "Test", "Benchmark", "table-driven"], "description": "Go 内建测试框架"},
+        {"code": "go-6.3", "title": "go mod 依赖管理", "order_index": 3, "keywords": ["go.mod", "go.sum", "go get", "vendor"], "description": "模块化依赖管理"},
+        {"code": "go-6.4", "title": "项目结构与最佳实践", "order_index": 4, "keywords": ["cmd", "internal", "pkg", "代码风格"], "description": "Go 项目布局约定"}
+      ]
+    }
+  ]
+}

@@ -18,6 +18,9 @@ class Exercise(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
+    language: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="python", index=True
+    )
     difficulty: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     question_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
 

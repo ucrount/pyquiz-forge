@@ -21,12 +21,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { learningPathApi } from '@/api'
+import { useLanguageStore } from '@/stores/language'
 import type { ChapterWithKnowledgePoints } from '@/types/chapter'
 
 const props = withDefaults(
   defineProps<{
     modelValue: number | null
     placeholder?: string
+    /** Override store's language; if not given, uses store's current. */
+    language?: string
   }>(),
   { placeholder: '请选择知识点（章节 → 知识点）' },
 )
@@ -43,6 +46,7 @@ interface CascadeOption {
   [key: string]: any
 }
 
+const langStore = useLanguageStore()
 const tree = ref<ChapterWithKnowledgePoints[]>([])
 const selected = ref<(number | string)[]>([])
 
@@ -50,6 +54,10 @@ const cascaderProps = {
   expandTrigger: 'hover' as const,
   emitPath: true,
 }
+
+const effectiveLanguage = computed(
+  () => props.language ?? langStore.current,
+)
 
 const options = computed<CascadeOption[]>(() =>
   tree.value.map((c) => ({
@@ -63,6 +71,26 @@ const options = computed<CascadeOption[]>(() =>
     })),
   })),
 )
+
+async function reload() {
+  tree.value = await learningPathApi.tree(effectiveLanguage.value)
+  syncFromModel(props.modelValue)
+}
+
+watch(effectiveLanguage, () => {
+  // language changed — clear selection if the current KP is no longer valid
+  // and reload the tree.
+  reload().then(() => {
+    if (props.modelValue) {
+      const stillValid = tree.value.some((c) =>
+        (c.knowledge_points ?? []).some((kp) => kp.id === props.modelValue),
+      )
+      if (!stillValid) {
+        emit('update:modelValue', null)
+      }
+    }
+  })
+})
 
 watch(
   () => props.modelValue,
@@ -92,8 +120,5 @@ function onChange(val: any) {
   }
 }
 
-onMounted(async () => {
-  tree.value = await learningPathApi.tree()
-  syncFromModel(props.modelValue)
-})
+onMounted(reload)
 </script>

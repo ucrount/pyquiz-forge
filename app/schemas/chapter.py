@@ -9,6 +9,7 @@ class ChapterBase(BaseModel):
     title: str
     order_index: int = 0
     description: str = ""
+    language: str = "python"
 
 
 class ChapterRead(ChapterBase):

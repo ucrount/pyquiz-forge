@@ -7,17 +7,23 @@ from sqlalchemy.orm import Session, selectinload
 from app.models import Chapter
 
 
-def list_chapters(db: Session) -> List[Chapter]:
-    stmt = select(Chapter).order_by(Chapter.order_index)
+def list_chapters(db: Session, language: Optional[str] = None) -> List[Chapter]:
+    stmt = select(Chapter).order_by(Chapter.language, Chapter.order_index)
+    if language:
+        stmt = stmt.where(Chapter.language == language)
     return list(db.execute(stmt).scalars().all())
 
 
-def list_chapters_with_kps(db: Session) -> List[Chapter]:
+def list_chapters_with_kps(
+    db: Session, language: Optional[str] = None
+) -> List[Chapter]:
     stmt = (
         select(Chapter)
         .options(selectinload(Chapter.knowledge_points))
-        .order_by(Chapter.order_index)
+        .order_by(Chapter.language, Chapter.order_index)
     )
+    if language:
+        stmt = stmt.where(Chapter.language == language)
     return list(db.execute(stmt).scalars().all())
 
 

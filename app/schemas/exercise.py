@@ -16,6 +16,7 @@ class TestCase(BaseModel):
 class ExerciseBase(BaseModel):
     title: str
     knowledge_point_id: int
+    language: str = "python"
     difficulty: Difficulty
     question_type: QuestionType
     description: str = ""
@@ -101,6 +102,7 @@ class ExerciseListItem(BaseModel):
     id: int
     title: str
     knowledge_point_id: int
+    language: str = "python"
     difficulty: Difficulty
     question_type: QuestionType
     status: ExerciseStatus

@@ -16,6 +16,7 @@ def create_exercise(
     knowledge_point_id: int,
     difficulty: str,
     question_type: str,
+    language: str = "python",
     description: str = "",
     example_input: str = "",
     example_output: str = "",
@@ -33,6 +34,7 @@ def create_exercise(
     obj = Exercise(
         title=title,
         knowledge_point_id=knowledge_point_id,
+        language=language,
         difficulty=difficulty,
         question_type=question_type,
         description=description,
@@ -62,6 +64,7 @@ def list_exercises(
     db: Session,
     *,
     knowledge_point_id: Optional[int] = None,
+    language: Optional[str] = None,
     difficulty: Optional[str] = None,
     question_type: Optional[str] = None,
     status: Optional[str] = None,
@@ -75,6 +78,8 @@ def list_exercises(
     filters = []
     if knowledge_point_id is not None:
         filters.append(Exercise.knowledge_point_id == knowledge_point_id)
+    if language:
+        filters.append(Exercise.language == language)
     if difficulty:
         filters.append(Exercise.difficulty == difficulty)
     if question_type:
@@ -98,6 +103,7 @@ def list_exercises_for_export(
     db: Session,
     *,
     knowledge_point_id: Optional[int] = None,
+    language: Optional[str] = None,
     difficulty: Optional[str] = None,
     question_type: Optional[str] = None,
     status: Optional[str] = None,
@@ -106,6 +112,8 @@ def list_exercises_for_export(
     stmt = select(Exercise)
     if knowledge_point_id is not None:
         stmt = stmt.where(Exercise.knowledge_point_id == knowledge_point_id)
+    if language:
+        stmt = stmt.where(Exercise.language == language)
     if difficulty:
         stmt = stmt.where(Exercise.difficulty == difficulty)
     if question_type:

@@ -1,8 +1,14 @@
-"""Prompt templates for exercise generation."""
+"""Prompt templates for exercise generation and scoring.
+
+All prompts are parameterized by language so the same templates work for
+Python, Java, Go, JavaScript, etc. The `language_label` (e.g. "Python")
+is a human-readable form used in prompt text; the `language` slug
+(e.g. "python") is the DB enum.
+"""
 from __future__ import annotations
 
 import json
-from typing import List
+from typing import Dict, List
 
 from app.models import KnowledgePoint
 from app.schemas.common import (
@@ -12,8 +18,32 @@ from app.schemas.common import (
     QuestionType,
 )
 
-SYSTEM_PROMPT = """\
-你是一名资深 Python 教学专家与出题专家。你的任务是根据指定知识点、难度和题型，生成一道高质量、可直接用于教学的 Python 练习题。
+
+# Human-readable label per language slug. Add new entries when extending.
+LANGUAGE_LABELS: Dict[str, str] = {
+    "python": "Python",
+    "java": "Java",
+    "go": "Go",
+    "javascript": "JavaScript",
+}
+
+# Language-specific notes injected into the system prompt.
+LANGUAGE_NOTES: Dict[str, str] = {
+    "python": "使用 Python 3.10+ 语法。",
+    "java": "使用 Java 17+ 语法。代码需要写成可编译的完整片段（含 main 方法或必要的类骨架）。",
+    "go": "使用 Go 1.21+ 语法。代码需要写成可编译的完整 package main + main 函数片段（如适用）。",
+    "javascript": "使用 ES2022+ 语法。如需运行环境请明确说明（浏览器或 Node.js）。",
+}
+
+
+def language_label(language: str) -> str:
+    return LANGUAGE_LABELS.get(language, language.title())
+
+
+def _system_prompt(language: str) -> str:
+    label = language_label(language)
+    note = LANGUAGE_NOTES.get(language, "")
+    return f"""你是一名资深 {label} 教学专家与出题专家。你的任务是根据指定知识点、难度和题型，生成一道高质量、可直接用于教学的 {label} 练习题。
 
 要求：
 1. 题目必须严格围绕给定知识点，不偏题；
@@ -22,7 +52,7 @@ SYSTEM_PROMPT = """\
 4. 所有字段都必须填写；如果某字段对当前题型不适用，填空字符串 ""；
 5. 代码中如果有中文符号，必须替换为英文符号；
 6. 测试用例必须真实可运行，期望输出必须正确；
-7. 使用 Python 3.10+ 语法。
+7. {note}
 """
 
 
@@ -62,13 +92,16 @@ def render_user_prompt(
     chapter_title: str,
     difficulty: Difficulty,
     question_type: QuestionType,
+    language: str,
 ) -> str:
     keywords = _parse_keywords(kp.keywords)
     keywords_text = "、".join(keywords) if keywords else "（未提供）"
     diff_desc = DIFFICULTY_DESC.get(difficulty, "")
     qt_desc = QUESTION_TYPE_DESC.get(question_type, "")
-    return f"""请生成一道 Python 练习题，要求如下：
+    label = language_label(language)
+    return f"""请生成一道 {label} 练习题，要求如下：
 
+【语言】{label}
 【章节】{chapter_title}
 【知识点】{kp.title}（编号 {kp.code}）
 【知识点关键词】{keywords_text}
@@ -89,9 +122,10 @@ def build_messages(
     chapter_title: str,
     difficulty: Difficulty,
     question_type: QuestionType,
+    language: str,
 ) -> List[dict]:
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": _system_prompt(language)},
         {
             "role": "user",
             "content": render_user_prompt(
@@ -99,6 +133,7 @@ def build_messages(
                 chapter_title=chapter_title,
                 difficulty=difficulty,
                 question_type=question_type,
+                language=language,
             ),
         },
     ]
@@ -108,8 +143,10 @@ def build_messages(
 # Scoring (quality evaluation of an existing exercise)
 # ==========================================================================
 
-SCORE_SYSTEM_PROMPT = """\
-你是一名严格的 Python 教学评审专家。你的任务是评估一道 Python 练习题的整体质量，给出 1-10 分（可保留一位小数）的多维评分和总评。
+
+def _score_system_prompt(language: str) -> str:
+    label = language_label(language)
+    return f"""你是一名严格的 {label} 教学评审专家。你的任务是评估一道 {label} 练习题的整体质量，给出 1-10 分（可保留一位小数）的多维评分和总评。
 
 要求：
 1. 客观、严格，不要为了讨好作者打高分；
@@ -158,9 +195,12 @@ def render_score_user_prompt(
     test_cases: list,
     explanation: str,
     common_mistakes: str,
+    language: str,
 ) -> str:
-    return f"""请对以下 Python 练习题打分。
+    label = language_label(language)
+    return f"""请对以下 {label} 练习题打分。
 
+【语言】{label}
 【知识点】{chapter_title} / {kp_title}
 【请求难度】{difficulty}
 【题型】{question_type}
@@ -210,9 +250,10 @@ def build_score_messages(
     test_cases: list,
     explanation: str,
     common_mistakes: str,
+    language: str,
 ) -> List[dict]:
     return [
-        {"role": "system", "content": SCORE_SYSTEM_PROMPT},
+        {"role": "system", "content": _score_system_prompt(language)},
         {
             "role": "user",
             "content": render_score_user_prompt(
@@ -227,7 +268,7 @@ def build_score_messages(
                 test_cases=test_cases,
                 explanation=explanation,
                 common_mistakes=common_mistakes,
+                language=language,
             ),
         },
     ]
-

@@ -152,12 +152,14 @@ def generate_one(
     cfg = _resolve_llm_config(db, llm_config_id)
     kp = _resolve_kp(db, knowledge_point_id)
     chapter_title = kp.chapter.title if kp.chapter else ""
+    language = kp.language or "python"
 
     messages = build_messages(
         kp=kp,
         chapter_title=chapter_title,
         difficulty=difficulty,
         question_type=question_type,
+        language=language,
     )
     prompt_text = json.dumps(messages, ensure_ascii=False)
 
@@ -197,6 +199,7 @@ def generate_one(
         db,
         title=str(parsed.get("title") or "(untitled)")[:200],
         knowledge_point_id=kp.id,
+        language=language,
         difficulty=difficulty.value,
         question_type=question_type.value,
         description=str(parsed.get("description") or ""),

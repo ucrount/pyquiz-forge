@@ -3,14 +3,18 @@ import type { Chapter, ChapterWithKnowledgePoints } from '@/types/chapter'
 import type { KnowledgePoint } from '@/types/knowledge_point'
 
 export const learningPathApi = {
-  tree(): Promise<ChapterWithKnowledgePoints[]> {
-    return client.get('/learning-path').then((r) => r.data)
+  tree(language?: string): Promise<ChapterWithKnowledgePoints[]> {
+    const params = language ? { language } : {}
+    return client.get('/learning-path', { params }).then((r) => r.data)
   },
-  listChapters(): Promise<Chapter[]> {
-    return client.get('/chapters').then((r) => r.data)
+  listChapters(language?: string): Promise<Chapter[]> {
+    const params = language ? { language } : {}
+    return client.get('/chapters', { params }).then((r) => r.data)
   },
-  listKPs(chapterId?: number): Promise<KnowledgePoint[]> {
-    const params = chapterId ? { chapter_id: chapterId } : {}
+  listKPs(chapterId?: number, language?: string): Promise<KnowledgePoint[]> {
+    const params: Record<string, any> = {}
+    if (chapterId) params.chapter_id = chapterId
+    if (language) params.language = language
     return client.get('/knowledge-points', { params }).then((r) => r.data)
   },
   getKP(id: number): Promise<KnowledgePoint> {

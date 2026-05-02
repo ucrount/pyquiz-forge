@@ -25,6 +25,22 @@
       <el-header class="layout-header">
         <div class="header-title">{{ currentTitle }}</div>
         <div class="header-right">
+          <el-select
+            :model-value="langStore.current"
+            size="small"
+            style="width: 130px"
+            @update:model-value="onLanguageChange"
+          >
+            <template #prefix>
+              <span class="lang-prefix">语言</span>
+            </template>
+            <el-option
+              v-for="opt in LANGUAGE_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
           <el-tag v-if="activeLLMName" size="small" effect="plain" type="success">
             激活: {{ activeLLMName }}
           </el-tag>
@@ -64,6 +80,8 @@ import {
   Download,
 } from '@element-plus/icons-vue'
 import { useLLMConfigStore } from '@/stores/llmConfig'
+import { useLanguageStore } from '@/stores/language'
+import { LANGUAGE_OPTIONS, type Language } from '@/types/common'
 
 const route = useRoute()
 
@@ -89,7 +107,12 @@ const currentTitle = computed(
 )
 
 const llmStore = useLLMConfigStore()
+const langStore = useLanguageStore()
 const activeLLMName = computed(() => llmStore.active?.name ?? '')
+
+function onLanguageChange(v: Language) {
+  langStore.setLanguage(v)
+}
 
 onMounted(() => {
   llmStore.refresh().catch(() => void 0)
@@ -165,5 +188,11 @@ onMounted(() => {
   background: #f5f7fa;
   padding: 0;
   overflow-y: auto;
+}
+
+.lang-prefix {
+  color: #909399;
+  font-size: 12px;
+  margin-right: 4px;
 }
 </style>

@@ -1,4 +1,4 @@
-import type { Difficulty, ExerciseStatus, QuestionType } from './common'
+import type { Difficulty, ExerciseStatus, Language, QuestionType } from './common'
 
 export interface TestCase {
   input: string
@@ -16,6 +16,7 @@ export interface Exercise {
   id: number
   title: string
   knowledge_point_id: number
+  language: Language | string
   difficulty: Difficulty
   question_type: QuestionType
   description: string
@@ -44,6 +45,7 @@ export interface ExerciseListItem {
   id: number
   title: string
   knowledge_point_id: number
+  language: Language | string
   difficulty: Difficulty
   question_type: QuestionType
   status: ExerciseStatus

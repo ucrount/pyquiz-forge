@@ -57,8 +57,30 @@ export const PROVIDER_OPTIONS: { value: Provider; label: string }[] = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'qwen', label: 'Qwen / 通义千问' },
   { value: 'moonshot', label: 'Moonshot / Kimi' },
-  { value: 'claude', label: 'Claude (预留)' },
+  { value: 'claude', label: 'Claude' },
 ]
+
+// === Languages (mirror of LANGUAGE_LABELS in app/llm/prompts.py) ===
+
+export type Language = 'python' | 'java' | 'go' | 'javascript'
+
+export const LANGUAGE_LABEL: Record<Language, string> = {
+  python: 'Python',
+  java: 'Java',
+  go: 'Go',
+  javascript: 'JavaScript',
+}
+
+export const LANGUAGE_COLOR: Record<Language, string> = {
+  python: '#3776ab',
+  java: '#ed8b00',
+  go: '#00add8',
+  javascript: '#f7df1e',
+}
+
+export const LANGUAGE_OPTIONS: { value: Language; label: string }[] = (
+  Object.keys(LANGUAGE_LABEL) as Language[]
+).map((v) => ({ value: v, label: LANGUAGE_LABEL[v] }))
 
 export type ExerciseStatus = 'draft' | 'published' | 'archived'
 

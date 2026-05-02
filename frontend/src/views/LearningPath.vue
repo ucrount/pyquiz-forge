@@ -92,6 +92,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { MagicStick } from '@element-plus/icons-vue'
 import { learningPathApi } from '@/api'
+import { useLanguageStore } from '@/stores/language'
 import type { ChapterWithKnowledgePoints } from '@/types/chapter'
 import type { KnowledgePoint } from '@/types/knowledge_point'
 
@@ -104,6 +105,7 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
+const langStore = useLanguageStore()
 const tree = ref<ChapterWithKnowledgePoints[]>([])
 const loading = ref(false)
 const filterText = ref('')
@@ -146,12 +148,21 @@ function onNodeClick(data: TreeNode) {
 }
 
 onMounted(async () => {
+  await load()
+})
+
+async function load() {
   loading.value = true
   try {
-    tree.value = await learningPathApi.tree()
+    tree.value = await learningPathApi.tree(langStore.current)
   } finally {
     loading.value = false
   }
+}
+
+watch(() => langStore.current, () => {
+  selectedKP.value = null
+  load()
 })
 </script>
 

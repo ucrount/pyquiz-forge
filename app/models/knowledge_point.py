@@ -14,6 +14,9 @@ class KnowledgePoint(Base):
     chapter_id: Mapped[int] = mapped_column(
         ForeignKey("chapters.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    language: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="python", index=True
+    )
     code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -27,4 +30,4 @@ class KnowledgePoint(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<KnowledgePoint {self.code} {self.title}>"
+        return f"<KnowledgePoint {self.language}/{self.code} {self.title}>"

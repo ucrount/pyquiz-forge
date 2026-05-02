@@ -29,6 +29,10 @@ EXPECTED_COLUMNS: list[tuple[str, str, str, str | None]] = [
     ("exercises", "score_comment",       "TEXT NOT NULL",                 "''"),
     ("exercises", "scored_at",           "DATETIME",                      None),
     ("exercises", "score_llm_config_id", "INTEGER",                       None),
+    # Multi-language (added 2026-05)
+    ("chapters",         "language", "VARCHAR(20) NOT NULL", "'python'"),
+    ("knowledge_points", "language", "VARCHAR(20) NOT NULL", "'python'"),
+    ("exercises",        "language", "VARCHAR(20) NOT NULL", "'python'"),
 ]
 
 

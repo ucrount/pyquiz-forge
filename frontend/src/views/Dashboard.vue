@@ -5,19 +5,19 @@
     <el-row :gutter="16" class="stat-row">
       <el-col :span="6">
         <el-card shadow="never" class="stat-card stat-blue">
-          <div class="stat-label">章节数</div>
+          <div class="stat-label">{{ langLabel }} 章节</div>
           <div class="stat-value">{{ stats.chapters }}</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="stat-card stat-green">
-          <div class="stat-label">知识点</div>
+          <div class="stat-label">{{ langLabel }} 知识点</div>
           <div class="stat-value">{{ stats.kps }}</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card shadow="never" class="stat-card stat-orange">
-          <div class="stat-label">题目总数</div>
+          <div class="stat-label">{{ langLabel }} 题目</div>
           <div class="stat-value">{{ stats.exercises }}</div>
         </el-card>
       </el-col>
@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import {
   MagicStick,
   Setting,
@@ -115,13 +115,19 @@ import {
   generationApi,
 } from '@/api'
 import { useLLMConfigStore } from '@/stores/llmConfig'
+import { useLanguageStore } from '@/stores/language'
+import { LANGUAGE_LABEL, type Language } from '@/types/common'
 import { formatDuration } from '@/utils/format'
 import type { GenerationLog } from '@/types/generation'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import QuestionTypeTag from '@/components/QuestionTypeTag.vue'
 
 const llmStore = useLLMConfigStore()
+const langStore = useLanguageStore()
 const activeLLMName = computed(() => llmStore.active?.name ?? '')
+const langLabel = computed(
+  () => LANGUAGE_LABEL[langStore.current as Language] ?? langStore.current,
+)
 
 const stats = reactive({
   chapters: 0,
@@ -134,9 +140,9 @@ const loadingLogs = ref(false)
 
 async function loadStats() {
   const [chapters, kps, exercises] = await Promise.all([
-    learningPathApi.listChapters(),
-    learningPathApi.listKPs(),
-    exerciseApi.list({ page: 1, size: 1 }),
+    learningPathApi.listChapters(langStore.current),
+    learningPathApi.listKPs(undefined, langStore.current),
+    exerciseApi.list({ language: langStore.current, page: 1, size: 1 }),
   ])
   stats.chapters = chapters.length
   stats.kps = kps.length
@@ -151,6 +157,10 @@ async function loadLogs() {
     loadingLogs.value = false
   }
 }
+
+watch(() => langStore.current, () => {
+  loadStats()
+})
 
 onMounted(async () => {
   await Promise.all([loadStats(), loadLogs(), llmStore.refresh(true)])

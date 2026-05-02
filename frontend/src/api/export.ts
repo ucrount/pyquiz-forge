@@ -7,9 +7,11 @@ import type {
 
 interface ExportParams {
   knowledge_point_id?: number
+  language?: string
   difficulty?: Difficulty
   question_type?: QuestionType
   status?: ExerciseStatus
+  min_score?: number
 }
 
 function downloadBlob(blob: Blob, filename: string) {

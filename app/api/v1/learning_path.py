@@ -1,5 +1,5 @@
 """Learning path endpoints: chapters, knowledge points."""
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -14,14 +14,20 @@ router = APIRouter(tags=["learning-path"])
 
 
 @router.get("/learning-path", response_model=List[ChapterWithKnowledgePoints])
-def get_learning_path(db: Session = Depends(get_db)):
-    """Full learning path tree: chapters + knowledge points."""
-    return crud_chapter.list_chapters_with_kps(db)
+def get_learning_path(
+    language: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Full learning path tree: chapters + knowledge points (filterable by language)."""
+    return crud_chapter.list_chapters_with_kps(db, language=language)
 
 
 @router.get("/chapters", response_model=List[ChapterRead])
-def list_chapters(db: Session = Depends(get_db)):
-    return crud_chapter.list_chapters(db)
+def list_chapters(
+    language: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    return crud_chapter.list_chapters(db, language=language)
 
 
 @router.get(
@@ -37,10 +43,11 @@ def list_chapter_kps(chapter_id: int, db: Session = Depends(get_db)):
 
 @router.get("/knowledge-points", response_model=List[KnowledgePointRead])
 def list_kps(
-    chapter_id: int | None = None,
+    chapter_id: Optional[int] = None,
+    language: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    return crud_kp.list_kps(db, chapter_id=chapter_id)
+    return crud_kp.list_kps(db, chapter_id=chapter_id, language=language)
 
 
 @router.get("/knowledge-points/{kp_id}", response_model=KnowledgePointRead)
