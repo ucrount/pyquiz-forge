@@ -85,10 +85,13 @@
         <el-table-column label="知识点" width="100">
           <template #default="{ row }">#{{ row.knowledge_point_id }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" link type="primary" @click.stop="openDetail(row.id)">
+            <el-button size="small" link type="primary" @click.stop="openDetail(row.id, false)">
               详情
+            </el-button>
+            <el-button size="small" link type="primary" @click.stop="openDetail(row.id, true)">
+              编辑
             </el-button>
             <el-button size="small" link @click.stop="onRegenerate(row)">
               重新生成
@@ -113,22 +116,45 @@
       />
     </el-card>
 
-    <!-- Detail drawer -->
+    <!-- Detail / edit drawer -->
     <el-drawer
       v-model="detailVisible"
-      size="60%"
-      title="题目详情"
+      size="65%"
       :destroy-on-close="true"
+      :close-on-click-modal="!editMode"
     >
-      <ExerciseDetail :exercise="detailExercise" />
+      <template #header>
+        <div class="drawer-header">
+          <span class="drawer-title">{{ drawerTitle }}</span>
+          <el-button
+            v-if="detailExercise && !editMode"
+            size="small"
+            type="primary"
+            @click="editMode = true"
+          >
+            <el-icon><Edit /></el-icon><span>编辑</span>
+          </el-button>
+        </div>
+      </template>
+
+      <ExerciseEditor
+        v-if="detailExercise && editMode"
+        :exercise="detailExercise"
+        @saved="onSaved"
+        @cancel="editMode = false"
+      />
+      <ExerciseDetail
+        v-else
+        :exercise="detailExercise"
+      />
     </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { MagicStick } from '@element-plus/icons-vue'
+import { MagicStick, Edit } from '@element-plus/icons-vue'
 import { exerciseApi, generationApi } from '@/api'
 import {
   DIFFICULTY_OPTIONS,
@@ -141,6 +167,7 @@ import KnowledgePointPicker from '@/components/KnowledgePointPicker.vue'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import QuestionTypeTag from '@/components/QuestionTypeTag.vue'
 import ExerciseDetail from '@/components/ExerciseDetail.vue'
+import ExerciseEditor from '@/components/ExerciseEditor.vue'
 
 interface Filters {
   knowledge_point_id: number | null
@@ -165,6 +192,14 @@ const selectedIds = ref<number[]>([])
 
 const detailVisible = ref(false)
 const detailExercise = ref<Exercise | null>(null)
+const editMode = ref(false)
+
+const drawerTitle = computed(() => {
+  if (!detailExercise.value) return editMode.value ? '编辑题目' : '题目详情'
+  return editMode.value
+    ? `编辑题目 #${detailExercise.value.id}`
+    : `题目详情 #${detailExercise.value.id}`
+})
 
 async function load() {
   loading.value = true
@@ -201,13 +236,21 @@ function onSelectionChange(rows: ExerciseListItem[]) {
 }
 
 function onRowClick(row: ExerciseListItem) {
-  openDetail(row.id)
+  openDetail(row.id, false)
 }
 
-async function openDetail(id: number) {
+async function openDetail(id: number, edit = false) {
   detailExercise.value = null
+  editMode.value = edit
   detailVisible.value = true
   detailExercise.value = await exerciseApi.get(id)
+}
+
+function onSaved(updated: Exercise) {
+  detailExercise.value = updated
+  editMode.value = false
+  // Refresh list — title or status may have changed.
+  load()
 }
 
 async function onDelete(row: ExerciseListItem) {
@@ -267,5 +310,19 @@ onMounted(load)
   margin-top: 16px;
   justify-content: flex-end;
   display: flex;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-right: 24px;
+}
+
+.drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
 }
 </style>
