@@ -82,6 +82,9 @@ cp .env.example .env                    # 编辑 .env，至少填一个 LLM API 
 docker compose up -d --build
 ```
 
+> **🇨🇳 国内服务器读这里**：上面的 `git clone` 可能报 GnuTLS 错；`docker compose up` 也可能因 npm/pip/apt 拉国外源卡 20+ 分钟。
+> 完整国内部署指南（含镜像源、腾讯云/阿里云安全组）见下方 [部署到 Linux 服务器](#部署到-linux-服务器完整指南)。
+
 完成后打开浏览器：
 
 | 入口 | 地址 |
@@ -234,69 +237,220 @@ http://localhost:8000/ 同时服务前后端（生产部署的本地预览）。
 
 ---
 
-## 部署到 Linux 服务器
+## 部署到 Linux 服务器（完整指南）
 
-任意 Linux 发行版，仅需 Docker。
+> 这一节按真实部署路径写，**最终结果是 `http://<服务器IP>:8765/` 在浏览器能打开管理后台**。
+> 所有命令在 Ubuntu 22.04+ / Debian 12 / 腾讯云 / 阿里云 / AWS / 你自己的物理机都通用。
+> 整个流程约 15-20 分钟（其中 Docker 第一次构建占大头）。
 
-### 1. 装 Docker
+### 0. 准备一台 Linux 服务器
+
+任意 Linux 发行版，**最低配置 1 核 / 2 GB RAM / 10 GB 磁盘**。云厂商按量计费一台合适的机器一天几块钱。
+
+### 1. 安装 Docker（约 1 分钟）
 
 ```bash
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
-# 重新登录使组生效
+exit                                    # 退出 SSH，重新登录让 docker 组生效
+```
+
+重新登录后验证：
+
+```bash
 docker --version && docker compose version
+# Docker version 24.x ...
+# Docker Compose version v2.x.x
 ```
 
-### 2. 上传代码
+### 2. 克隆代码
 
 ```bash
-# 推荐 git
-cd /opt
-sudo git clone https://github.com/ucrount/pyquiz-forge.git
-sudo chown -R $USER:$USER pyquiz-forge
-
-# 或 rsync
-rsync -avz --exclude '.venv' --exclude 'data' --exclude 'logs' \
-    --exclude 'frontend/node_modules' --exclude 'frontend/dist' \
-    ./pyquiz-forge/ user@your-server:/opt/pyquiz-forge/
+git clone https://github.com/ucrount/pyquiz-forge.git
+cd pyquiz-forge
 ```
 
-### 3. 配置 + 启动
+> **🇨🇳 国内服务器特殊情况**：如果 git clone 报 `GnuTLS recv error` 或长时间无响应，
+> GitHub 在国内被限速 / 偶尔不稳。用 kkgithub 镜像替代即可：
+> ```bash
+> git clone https://kkgithub.com/ucrount/pyquiz-forge.git
+> cd pyquiz-forge
+> # 后续 git pull 升级也建议改远端：
+> git remote set-url origin https://kkgithub.com/ucrount/pyquiz-forge.git
+> ```
+
+### 3. 配置 .env
 
 ```bash
-cd /opt/pyquiz-forge
 cp .env.example .env
-vim .env                         # 填 DEFAULT_LLM_API_KEY 等
+nano .env                                # 或 vim .env
+```
+
+**至少改这一处**填上你的 LLM API Key（首次启动会自动种子配置并激活）：
+
+```env
+DEFAULT_LLM_API_KEY=sk-你的真实key       # DeepSeek 去 platform.deepseek.com 申请
+```
+
+> **🇨🇳 国内服务器加速**：再去 `.env` 末尾把这 3 行的 `#` 去掉，可让 docker build
+> 从约 22 分钟降到约 3 分钟：
+> ```env
+> NPM_REGISTRY=https://registry.npmmirror.com
+> PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+> APT_MIRROR=mirrors.tuna.tsinghua.edu.cn/debian
+> ```
+
+nano 保存退出：`Ctrl+O` → `Enter` → `Ctrl+X`。
+
+### 4. 构建并启动
+
+```bash
 docker compose up -d --build
+```
+
+第一次会拉镜像 + 装依赖 + 构建前端，**约 3-15 分钟**（取决于网速）：
+
+| 阶段 | 国际网络 | 国内默认 | 国内 + 镜像 |
+|------|---------|---------|-----------|
+| 拉镜像 | ~30s | ~30s | ~30s |
+| npm install | ~20s | ~5 min | ~10s |
+| apt-get 系统包 | ~30s | ~10 min ⚠️ | ~30s |
+| pip install | ~20s | ~5 min | ~30s |
+| **总计** | **~2 min** | **~22 min** | **~3 min** |
+
+期间另开一个终端看实时进度（Ctrl+C 退出不会停服务）：
+
+```bash
 docker compose logs -f
 ```
 
-### 4. 防火墙 / 安全组
+构建完成会看到：
 
-```bash
-sudo ufw allow 8765/tcp          # ufw 用户
-# 云厂商安全组也要放行 8765
+```
+[+] Running 2/2
+ ✔ Network pyquiz-forge_default  Created
+ ✔ Container pyquiz-forge        Started
 ```
 
-访问：`http://<服务器 IP>:8765/`
-
-### 5. 升级
+### 5. 验证后端就绪
 
 ```bash
-cd /opt/pyquiz-forge
-git pull
-docker compose up -d --build
+docker compose ps
+# STATUS 应显示  Up X minutes (healthy)
+# PORTS  应显示  0.0.0.0:8765->8000/tcp
+
+curl http://localhost:8765/api/v1/health
+# {"status":"ok"}
 ```
 
-数据在挂载的 `./data/pyquiz.db`，**升级不丢数据**（且自动迁移新增列）。
+启动日志末尾应能看到：
 
-### ⚠️ 安全建议
+```
+Learning path seeded across 4 files: +30 chapters, +134 knowledge points total.
+Default LLM config 'deepseek-default' seeded and activated.
+Frontend bundle detected at /app/app/static — serving SPA at /
+Application startup complete.
+Uvicorn running on http://0.0.0.0:8000
+```
 
-公网暴露 = LLM Token 也对外开放。生产环境强烈建议：
+如果 health 返回不正常或 STATUS 不是 healthy，看 `docker compose logs --tail 50` 的报错。
 
-- **仅本机端口** + 反代加 Auth：把 compose 端口改为 `"127.0.0.1:8765:8000"`，用 Nginx/Caddy 加 Basic Auth
-- **关闭 Swagger**：`app/main.py` 改 `docs_url=None, redoc_url=None`
-- **加 IP 白名单**：在反代上限制源 IP
+### 6. 防火墙与安全组（最容易卡住的一步）
+
+**服务器内部 curl 通了不代表外网能访问**。两层都要放行 8765：
+
+**A. Linux 系统层（ufw）**
+
+```bash
+sudo ufw status
+# inactive：跳过
+# active 且没 8765 规则：执行下面
+sudo ufw allow 8765/tcp
+```
+
+**B. 云厂商安全组**（最容易忘的一步）
+
+| 平台 | 操作路径 |
+|------|---------|
+| **腾讯云** | 控制台 → 云服务器 → 实例 → 详情页 **「安全组」** Tab → 编辑规则 → **入站规则** → 添加 |
+| **阿里云** | 控制台 → ECS → 安全组 → 配置规则 → **入方向** → 手动添加 |
+| **AWS** | EC2 → Security Groups → **Inbound rules** → Edit → Add rule |
+| **华为云** | 控制台 → ECS → 安全组 → 配置规则 → **入方向规则** → 添加 |
+
+规则统一参数：
+
+- 协议：**TCP**
+- 端口：**8765**
+- 来源/源 IP：`0.0.0.0/0`（公开）或填你自己电脑的公网 IP（更安全，仅自己访问）
+- 策略：**允许**
+
+> 不需要重启服务器，规则保存后立即生效。
+
+### 7. 浏览器访问
+
+```bash
+curl ifconfig.me                         # 获取服务器公网 IP
+```
+
+打开浏览器：
+
+| 入口 | URL |
+|------|-----|
+| 🌐 **管理后台** | `http://<公网IP>:8765/` |
+| 📘 Swagger UI | `http://<公网IP>:8765/docs` |
+| ❤️ 健康检查 | `http://<公网IP>:8765/api/v1/health` |
+
+> **如果浏览器打不开但 SSH 内 curl 行**：99% 是云厂商安全组没放行（回到第 6 步）。
+> 用 `curl --noproxy '*' -v http://<公网IP>:8765/api/v1/health` 在你**本地电脑**测试，
+> 如果是 `Connection timed out` 就是安全组问题，如果是 `502 Bad Gateway` 是你本地代理走错了。
+
+### 8. 日常运维命令
+
+```bash
+# 看实时日志（Ctrl+C 退出不停服）
+docker compose logs -f
+
+# 看最近 50 行（排查用）
+docker compose logs --tail 50
+
+# 改了 .env 后重启（秒级，不重新构建）
+docker compose up -d
+
+# 拉新代码升级（数据自动迁移，不丢）
+git pull && docker compose up -d --build
+
+# 停止
+docker compose down
+
+# 手动备份数据库
+cp data/pyquiz.db ~/pyquiz-backup-$(date +%F).db
+
+# 自动每天 3 点备份 + 清理 30 天前（crontab -e 加这行）
+0 3 * * * cp /home/ubuntu/pyquiz-forge/data/pyquiz.db /home/ubuntu/backups/pyquiz-$(date +\%F).db && find /home/ubuntu/backups -name 'pyquiz-*.db' -mtime +30 -delete
+```
+
+### 9. ⚠️ 安全加固（生产环境强烈建议）
+
+**公网暴露 = LLM API Key 间接对外开放**——任何人都能消耗你的 Token 配额。三选一：
+
+- **A. 仅本机端口 + Nginx 反代加 Basic Auth**：`docker-compose.yml` 端口改成 `"127.0.0.1:8765:8000"`，外面用 Nginx/Caddy 反代加密码
+- **B. 关闭 Swagger UI**：`app/main.py` 给 `FastAPI()` 加 `docs_url=None, redoc_url=None`
+- **C. 安全组改成只允许你自己的 IP**：第 6 步的"源 IP"从 `0.0.0.0/0` 改为你电脑的公网 IP
+
+### 10. 部署完整 Checklist
+
+最终验证 8 项，全 ✅ 即部署成功：
+
+- [ ] `docker compose ps` 显示容器 `Up X minutes (healthy)`
+- [ ] 服务器内 `curl localhost:8765/api/v1/health` 返回 `{"status":"ok"}`
+- [ ] `docker compose logs` 末尾出现 `Application startup complete`
+- [ ] 日志里能看到 `Learning path seeded across 4 files: +30 chapters, +134 knowledge points`
+- [ ] （如填了 .env LLM key）日志里有 `Default LLM config 'xxx-default' seeded and activated`
+- [ ] `sudo ufw status` 显示 inactive，或者包含 `8765/tcp ALLOW`
+- [ ] 云厂商控制台**入站**规则包含 `TCP : 8765`
+- [ ] 本地电脑浏览器打开 `http://<公网IP>:8765/` 看到管理后台（侧栏 7 个菜单）
+
+任何一项不通，回到上一项检查。常见问题见下方 [FAQ](#常见问题)。
 
 ---
 
@@ -442,6 +596,60 @@ Dockerfile 第一阶段在 Node 20-alpine 构建前端。慢通常是 npm 网络
 # 在 frontend-builder 阶段加：
 RUN npm config set registry https://registry.npmmirror.com
 ```
+</details>
+
+<details>
+<summary><b>Q8：git clone 报 "GnuTLS recv error (-110): The TLS connection was non-properly terminated"</b></summary>
+
+这是国内服务器连 GitHub 的常见问题（GFW + 网络抖动）。三个备选方案任选其一：
+
+**方案 1（最简单，推荐）**：用 kkgithub 镜像
+```bash
+git clone https://kkgithub.com/ucrount/pyquiz-forge.git
+```
+
+**方案 2**：调大 git 缓冲区
+```bash
+git config --global http.postBuffer 524288000
+git config --global http.lowSpeedLimit 0
+git config --global http.lowSpeedTime 999999
+git clone https://github.com/ucrount/pyquiz-forge.git
+```
+
+**方案 3**：直接下 zip
+```bash
+wget https://kkgithub.com/ucrount/pyquiz-forge/archive/refs/heads/main.zip
+unzip main.zip && mv pyquiz-forge-main pyquiz-forge
+```
+</details>
+
+<details>
+<summary><b>Q9：docker compose build 卡在 "apt-get update" 10 分钟以上</b></summary>
+
+国内服务器拉 deb.debian.org 慢。在 `.env` 末尾**取消注释**这一行用清华镜像：
+```env
+APT_MIRROR=mirrors.tuna.tsinghua.edu.cn/debian
+```
+然后清缓存重建：
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+首次构建从 ~22 min → ~3 min。
+</details>
+
+<details>
+<summary><b>Q10：浏览器打不开 http://公网IP:8765 但服务器内 curl 通</b></summary>
+
+99% 是云厂商安全组没放行 8765。诊断方法（在你**本地电脑**执行，不是服务器）：
+
+```bash
+curl --noproxy '*' -v --max-time 10 http://你的服务器IP:8765/api/v1/health
+```
+
+- **`Connection timed out`** → 安全组没放行，去控制台加 TCP:8765 入站规则
+- **`Connection refused`** → 服务没起或端口绑错，回服务器检查 `docker compose ps`
+- **`502 Bad Gateway`** → 你本地走了代理（V2rayU、Clash 等），代理路由不到这个 IP，要么关代理要么加直连规则
 </details>
 
 ---

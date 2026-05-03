@@ -1,8 +1,16 @@
-version: "3.9"
-
 services:
   pyquiz-forge:
-    build: .
+    build:
+      context: .
+      args:
+        # Build-time mirrors for slow networks (defaults = official mirrors).
+        # Set in .env to override, e.g.:
+        #   NPM_REGISTRY=https://registry.npmmirror.com
+        #   PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+        #   APT_MIRROR=mirrors.tuna.tsinghua.edu.cn/debian
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+        APT_MIRROR: ${APT_MIRROR:-}
     image: pyquiz-forge:latest
     container_name: pyquiz-forge
     restart: unless-stopped
