@@ -334,17 +334,31 @@ onMounted(load)
 
 <style scoped>
 .learning-page {
-  min-height: calc(100vh - 64px);
+  /* 锁住整个页面高度，禁止页面级滚动 */
+  height: calc(100vh - 64px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.learning-page :deep(.el-row) {
+  flex: 1;
+  min-height: 0;
+}
+
+.learning-page :deep(.el-col) {
+  height: 100%;
 }
 
 .tree-card {
-  height: calc(100vh - 130px);
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .tree-card :deep(.cyber-card__body) {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -356,11 +370,17 @@ onMounted(load)
 }
 
 .detail-card {
-  min-height: calc(100vh - 130px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-card :deep(.cyber-card__body) {
-  padding: 18px 24px;
+  flex: 1;
+  min-height: 0;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .small-stat {
