@@ -57,6 +57,13 @@ class ExerciseStatus(str, Enum):
     archived = "archived"
 
 
+class Mastery(str, Enum):
+    not_started = "not_started"
+    learning = "learning"
+    mastered = "mastered"
+    unknown = "unknown"
+
+
 T = TypeVar("T")
 
 

@@ -153,6 +153,67 @@ def build_messages(
 
 
 # ==========================================================================
+# Learning content (markdown teaching material per knowledge point)
+# ==========================================================================
+
+
+def _learning_content_system_prompt(language: str) -> str:
+    label = language_label(language)
+    note = LANGUAGE_NOTES.get(language, "")
+    return f"""你是一名资深 {label} 教师。请为指定的知识点编写一篇详细的学习材料，帮助学习者从零理解这个知识点。
+
+要求：
+1. **直接输出 Markdown**——不要任何前置解释、不要包裹在 ```markdown ... ``` 里
+2. 结构包含但不限于（按需自由组织标题层级）：
+   - 概念定义（这个东西是什么）
+   - 语法要点（怎么写）
+   - 代码示例（**至少 2 段**可运行的代码）
+   - 常见用法 / 应用场景
+   - 易错点 / 注意事项
+3. 代码块用 ```{language} 围栏包裹（语言标签很重要，前端会做语法高亮）
+4. 控制在 600-1500 字之间
+5. {note}
+6. 用学习者友好的口吻，避免堆术语；关键术语首次出现可以括号附英文
+"""
+
+
+def render_learning_user_prompt(
+    *,
+    kp: KnowledgePoint,
+    chapter_title: str,
+    language: str,
+) -> str:
+    keywords = _parse_keywords(kp.keywords)
+    keywords_text = "、".join(keywords) if keywords else "（未提供）"
+    label = language_label(language)
+    return f"""请为以下 {label} 知识点撰写学习材料：
+
+【章节】{chapter_title}
+【知识点】{kp.title}（编号 {kp.code}）
+【知识点关键词】{keywords_text}
+【知识点简介】{kp.description or '（未提供）'}
+
+直接输出 Markdown 内容，不要任何额外文字。"""
+
+
+def build_learning_messages(
+    *,
+    kp: KnowledgePoint,
+    chapter_title: str,
+    language: str,
+) -> List[dict]:
+    return [
+        {"role": "system", "content": _learning_content_system_prompt(language)},
+        {
+            "role": "user",
+            "content": render_learning_user_prompt(
+                kp=kp, chapter_title=chapter_title, language=language,
+            ),
+        },
+    ]
+
+
+# ==========================================================================
 # Scoring (quality evaluation of an existing exercise)
 # ==========================================================================
 

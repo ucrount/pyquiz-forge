@@ -11,7 +11,18 @@
         class="layout-menu"
       >
         <el-menu-item
-          v-for="item in menuItems"
+          v-for="item in mainMenu"
+          :key="item.path"
+          :index="item.path"
+        >
+          <el-icon><component :is="item.icon" /></el-icon>
+          <span>{{ item.title }}</span>
+        </el-menu-item>
+
+        <div class="menu-sep"></div>
+
+        <el-menu-item
+          v-for="item in bottomMenu"
           :key="item.path"
           :index="item.path"
         >
@@ -83,9 +94,12 @@ import {
   Document,
   Download,
   Aim,
+  StarFilled,
+  Tools,
 } from '@element-plus/icons-vue'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { useLanguageStore } from '@/stores/language'
+import { useThemeStore } from '@/stores/theme'
 import { LANGUAGE_OPTIONS, type Language } from '@/types/common'
 
 const route = useRoute()
@@ -96,15 +110,20 @@ interface MenuItem {
   icon: any
 }
 
-const menuItems: MenuItem[] = [
+const mainMenu: MenuItem[] = [
   { path: '/', title: '概览', icon: DataLine },
   { path: '/learning-path', title: '学习路线', icon: Reading },
+  { path: '/practice', title: '在线练习', icon: Aim },
+  { path: '/review', title: '复习清单', icon: StarFilled },
   { path: '/generate', title: '题目生成', icon: MagicStick },
   { path: '/exercises', title: '题库管理', icon: Notebook },
-  { path: '/practice', title: '在线练习', icon: Aim },
   { path: '/llm-configs', title: '大模型配置', icon: Setting },
   { path: '/logs', title: '生成日志', icon: Document },
   { path: '/export', title: '导出题库', icon: Download },
+]
+
+const bottomMenu: MenuItem[] = [
+  { path: '/settings', title: '设置', icon: Tools },
 ]
 
 const activeRoute = computed(() => route.path)
@@ -114,6 +133,8 @@ const currentTitle = computed(
 
 const llmStore = useLLMConfigStore()
 const langStore = useLanguageStore()
+useThemeStore() // ensures theme is applied to <html data-theme="..."> on mount
+
 const activeLLMName = computed(() => llmStore.active?.name ?? '')
 
 function onLanguageChange(v: Language) {
@@ -314,5 +335,12 @@ onMounted(() => {
   font-size: 11px;
   margin-right: 4px;
   letter-spacing: 0.6px;
+}
+
+.menu-sep {
+  height: 1px;
+  background: var(--el-border-color-lighter);
+  margin: 12px 16px;
+  opacity: 0.6;
 }
 </style>

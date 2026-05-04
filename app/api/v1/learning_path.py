@@ -1,7 +1,7 @@
 """Learning path endpoints: chapters, knowledge points (CRUD)."""
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -13,11 +13,16 @@ from app.schemas.chapter import (
     ChapterUpdate,
     ChapterWithKnowledgePoints,
 )
+from app.schemas.common import Mastery
 from app.schemas.knowledge_point import (
+    KnowledgePointContentUpdate,
     KnowledgePointCreate,
     KnowledgePointRead,
     KnowledgePointUpdate,
+    MasteryUpdate,
 )
+from app.services import learning_service
+from app.services.generation_service import GenerationError
 
 router = APIRouter(tags=["learning-path"])
 
@@ -59,9 +64,29 @@ def list_chapter_kps(chapter_id: int, db: Session = Depends(get_db)):
 def list_kps(
     chapter_id: Optional[int] = None,
     language: Optional[str] = None,
+    mastery: Optional[List[Mastery]] = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    return crud_kp.list_kps(db, chapter_id=chapter_id, language=language)
+    mastery_values = [m.value for m in mastery] if mastery else None
+    return crud_kp.list_kps(
+        db, chapter_id=chapter_id, language=language, mastery=mastery_values
+    )
+
+
+@router.get("/knowledge-points/mastery-counts")
+def mastery_counts(
+    language: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Return per-state KP counts. Used by Review page stats cards."""
+    counts = crud_kp.count_by_mastery(db, language=language)
+    # Always include all 4 states (zero if absent)
+    return {
+        "not_started": counts.get("not_started", 0),
+        "learning": counts.get("learning", 0),
+        "mastered": counts.get("mastered", 0),
+        "unknown": counts.get("unknown", 0),
+    }
 
 
 @router.get("/knowledge-points/{kp_id}", response_model=KnowledgePointRead)
@@ -229,3 +254,63 @@ def next_order_index(
     return {
         "next": crud_kp.max_order_index_in_chapter(db, chapter_id) + 1
     }
+
+
+# ========================================================================
+# Learning content + mastery (v0.3)
+# ========================================================================
+
+
+@router.post(
+    "/knowledge-points/{kp_id}/generate-content",
+    response_model=KnowledgePointRead,
+)
+def generate_kp_content(
+    kp_id: int,
+    llm_config_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Use LLM to generate teaching markdown for this KP, persist + return."""
+    try:
+        kp, _latency = learning_service.generate_content_for_kp(
+            db, kp_id=kp_id, llm_config_id=llm_config_id, overwrite=True,
+        )
+    except GenerationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return kp
+
+
+@router.put(
+    "/knowledge-points/{kp_id}/content",
+    response_model=KnowledgePointRead,
+)
+def update_kp_content(
+    kp_id: int,
+    data: KnowledgePointContentUpdate,
+    db: Session = Depends(get_db),
+):
+    """Manual edit of learning content (markdown body)."""
+    try:
+        kp = learning_service.update_content(db, kp_id=kp_id, content=data.content)
+    except GenerationError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return kp
+
+
+@router.patch(
+    "/knowledge-points/{kp_id}/mastery",
+    response_model=KnowledgePointRead,
+)
+def set_kp_mastery(
+    kp_id: int,
+    data: MasteryUpdate,
+    db: Session = Depends(get_db),
+):
+    """Set mastery state (not_started / learning / mastered / unknown)."""
+    try:
+        kp = learning_service.set_mastery(
+            db, kp_id=kp_id, mastery=data.mastery, note=data.note,
+        )
+    except GenerationError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return kp

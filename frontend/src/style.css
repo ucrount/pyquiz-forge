@@ -78,6 +78,91 @@
   --glass-border-hover: rgba(0, 212, 255, 0.4);
 }
 
+/* =========================================================
+   Theme variants — applied via <html data-theme="...">
+   Each theme overrides only the bits that differ from cyber.
+   ========================================================= */
+
+[data-theme='nebula'] {
+  --el-bg-color-page: #050216;
+  --el-color-primary: #ff4dd6;
+  --el-color-primary-light-3: #ff80e0;
+  --el-color-primary-dark-2: #cc3aab;
+  --neon-cyan: #ff4dd6;
+  --neon-purple: #9d4dff;
+  --neon-pink: #ff70a8;
+  --glass-bg: rgba(20, 8, 38, 0.6);
+  --glass-border: rgba(255, 77, 214, 0.15);
+  --glass-border-hover: rgba(255, 77, 214, 0.45);
+}
+
+[data-theme='matrix'] {
+  --el-bg-color-page: #000805;
+  --el-color-primary: #00ff7e;
+  --el-color-primary-light-3: #4dffa6;
+  --el-color-primary-dark-2: #00cc66;
+  --el-color-success: #00ff7e;
+  --neon-cyan: #00ff7e;
+  --neon-purple: #7effc7;
+  --neon-green: #00ff7e;
+  --neon-pink: #00ff7e;
+  --glass-bg: rgba(0, 14, 7, 0.6);
+  --glass-border: rgba(0, 255, 126, 0.15);
+  --glass-border-hover: rgba(0, 255, 126, 0.45);
+}
+
+[data-theme='sunset'] {
+  --el-bg-color-page: #100406;
+  --el-color-primary: #ff8033;
+  --el-color-primary-light-3: #ffa066;
+  --el-color-primary-dark-2: #cc6629;
+  --neon-cyan: #ff8033;
+  --neon-purple: #ff4d8d;
+  --neon-pink: #ff4d8d;
+  --neon-yellow: #ffaa00;
+  --glass-bg: rgba(28, 12, 16, 0.6);
+  --glass-border: rgba(255, 128, 51, 0.15);
+  --glass-border-hover: rgba(255, 128, 51, 0.45);
+}
+
+[data-theme='minimal'] {
+  --el-bg-color-page: #050505;
+  --el-bg-color: #0a0a0a;
+  --el-bg-color-overlay: #141414;
+  --el-text-color-primary: #f0f0f0;
+  --el-text-color-regular: #b0b0b0;
+  --el-text-color-secondary: #808080;
+  --el-border-color: #2a2a2a;
+  --el-border-color-light: #353535;
+  --el-border-color-lighter: #1f1f1f;
+  --el-color-primary: #e0e0e0;
+  --el-color-primary-light-3: #f0f0f0;
+  --el-color-primary-dark-2: #c0c0c0;
+  --neon-cyan: #e0e0e0;
+  --neon-purple: #b0b0b0;
+  --neon-pink: #ff8080;
+  --neon-green: #80ff80;
+  --neon-yellow: #ffd080;
+  --glass-bg: rgba(15, 15, 15, 0.6);
+  --glass-border: rgba(224, 224, 224, 0.1);
+  --glass-border-hover: rgba(224, 224, 224, 0.3);
+}
+
+/* Minimal theme strips background flourishes */
+[data-theme='minimal'] body {
+  background: var(--el-bg-color-page) !important;
+}
+[data-theme='minimal'] body::before {
+  display: none;
+}
+[data-theme='minimal'] .el-button--primary:not(.is-text):not(.is-link),
+[data-theme='minimal'] .el-button--success:not(.is-text):not(.is-link),
+[data-theme='minimal'] .el-button--danger:not(.is-text):not(.is-link) {
+  background: #f0f0f0 !important;
+  color: #0a0a0a !important;
+  box-shadow: none !important;
+}
+
 html,
 body,
 #app {

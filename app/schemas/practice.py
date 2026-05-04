@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import Difficulty, ExerciseStatus, QuestionType
+from app.schemas.common import Difficulty, ExerciseStatus, Mastery, QuestionType
 from app.schemas.exercise import ExerciseRead
 
 
@@ -16,6 +16,9 @@ class PracticeSessionRequest(BaseModel):
     question_types: Optional[List[QuestionType]] = None
     min_score: Optional[float] = Field(default=None, ge=0, le=10)
     status: Optional[ExerciseStatus] = ExerciseStatus.published
+    # Optional: only pick exercises whose KP has these mastery states
+    # (e.g. ["unknown", "learning"] for "review the rough spots")
+    kp_mastery: Optional[List[Mastery]] = None
     size: int = Field(default=10, ge=1, le=50)
     random_order: bool = True
 

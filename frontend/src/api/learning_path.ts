@@ -11,7 +11,9 @@ import type {
   KnowledgePointCascadeInfo,
   KnowledgePointCreate,
   KnowledgePointUpdate,
+  MasteryCounts,
 } from '@/types/knowledge_point'
+import type { Mastery } from '@/types/common'
 
 export const learningPathApi = {
   // ===== Read =====
@@ -23,14 +25,27 @@ export const learningPathApi = {
     const params = language ? { language } : {}
     return client.get('/chapters', { params }).then((r) => r.data)
   },
-  listKPs(chapterId?: number, language?: string): Promise<KnowledgePoint[]> {
-    const params: Record<string, any> = {}
-    if (chapterId) params.chapter_id = chapterId
-    if (language) params.language = language
+  listKPs(
+    chapterId?: number,
+    language?: string,
+    mastery?: Mastery[],
+  ): Promise<KnowledgePoint[]> {
+    const params = new URLSearchParams()
+    if (chapterId) params.append('chapter_id', String(chapterId))
+    if (language) params.append('language', language)
+    if (mastery && mastery.length) {
+      for (const m of mastery) params.append('mastery', m)
+    }
     return client.get('/knowledge-points', { params }).then((r) => r.data)
   },
   getKP(id: number): Promise<KnowledgePoint> {
     return client.get(`/knowledge-points/${id}`).then((r) => r.data)
+  },
+  masteryCounts(language?: string): Promise<MasteryCounts> {
+    const params = language ? { language } : {}
+    return client
+      .get('/knowledge-points/mastery-counts', { params })
+      .then((r) => r.data)
   },
 
   // ===== Chapter mutations =====
@@ -59,6 +74,24 @@ export const learningPathApi = {
   },
   kpCascadeInfo(id: number): Promise<KnowledgePointCascadeInfo> {
     return client.get(`/knowledge-points/${id}/cascade-info`).then((r) => r.data)
+  },
+
+  // ===== Learning content + mastery (v0.3) =====
+  generateContent(id: number, llmConfigId?: number): Promise<KnowledgePoint> {
+    const params = llmConfigId ? { llm_config_id: llmConfigId } : {}
+    return client
+      .post(`/knowledge-points/${id}/generate-content`, null, { params })
+      .then((r) => r.data)
+  },
+  updateContent(id: number, content: string): Promise<KnowledgePoint> {
+    return client
+      .put(`/knowledge-points/${id}/content`, { content })
+      .then((r) => r.data)
+  },
+  setMastery(id: number, mastery: Mastery, note?: string): Promise<KnowledgePoint> {
+    return client
+      .patch(`/knowledge-points/${id}/mastery`, { mastery, note })
+      .then((r) => r.data)
   },
 
   // ===== Helpers =====

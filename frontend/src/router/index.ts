@@ -18,6 +18,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '学习路线', icon: 'Reading' },
       },
       {
+        path: 'practice',
+        name: 'practice',
+        component: () => import('@/views/Practice.vue'),
+        meta: { title: '在线练习', icon: 'Aim' },
+      },
+      {
+        path: 'review',
+        name: 'review',
+        component: () => import('@/views/Review.vue'),
+        meta: { title: '复习清单', icon: 'StarFilled' },
+      },
+      {
         path: 'generate',
         name: 'generate',
         component: () => import('@/views/Generate.vue'),
@@ -28,12 +40,6 @@ const routes: RouteRecordRaw[] = [
         name: 'exercises',
         component: () => import('@/views/Exercises.vue'),
         meta: { title: '题库管理', icon: 'Notebook' },
-      },
-      {
-        path: 'practice',
-        name: 'practice',
-        component: () => import('@/views/Practice.vue'),
-        meta: { title: '在线练习', icon: 'Aim' },
       },
       {
         path: 'llm-configs',
@@ -52,6 +58,12 @@ const routes: RouteRecordRaw[] = [
         name: 'export',
         component: () => import('@/views/Export.vue'),
         meta: { title: '导出题库', icon: 'Download' },
+      },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '设置', icon: 'Tools' },
       },
     ],
   },

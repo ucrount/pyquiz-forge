@@ -90,6 +90,35 @@ export const EXERCISE_STATUS_LABEL: Record<ExerciseStatus, string> = {
   archived: '已归档',
 }
 
+// === Mastery (per-KP learning state) ===
+
+export type Mastery = 'not_started' | 'learning' | 'mastered' | 'unknown'
+
+export const MASTERY_LABEL: Record<Mastery, string> = {
+  not_started: '未开始',
+  learning: '学习中',
+  mastered: '已掌握',
+  unknown: '不懂',
+}
+
+export const MASTERY_COLOR: Record<Mastery, string> = {
+  not_started: '#909399',
+  learning: '#5ce0ff',
+  mastered: '#00ff9d',
+  unknown: '#ff4d8d',
+}
+
+export const MASTERY_ICON: Record<Mastery, string> = {
+  not_started: '○',
+  learning: '📖',
+  mastered: '✓',
+  unknown: '❓',
+}
+
+export const MASTERY_OPTIONS: { value: Mastery; label: string }[] = (
+  Object.keys(MASTERY_LABEL) as Mastery[]
+).map((v) => ({ value: v, label: MASTERY_LABEL[v] }))
+
 export interface PageResult<T> {
   items: T[]
   total: number

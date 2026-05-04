@@ -1,8 +1,11 @@
 """KnowledgePoint schemas."""
+import json
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-import json
+
+from app.schemas.common import Mastery
 
 
 class KnowledgePointBase(BaseModel):
@@ -33,12 +36,28 @@ class KnowledgePointUpdate(BaseModel):
     description: Optional[str] = None
 
 
+class KnowledgePointContentUpdate(BaseModel):
+    """Manual edit of the learning content body."""
+    content: str
+
+
+class MasteryUpdate(BaseModel):
+    mastery: Mastery
+    note: Optional[str] = None
+
+
 class KnowledgePointRead(KnowledgePointBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     chapter_id: int
     keywords: List[str] = []
+
+    # Learning content + mastery
+    content: str = ""
+    mastery: Mastery = Mastery.not_started
+    mastery_note: str = ""
+    mastery_updated_at: Optional[datetime] = None
 
     @field_validator("keywords", mode="before")
     @classmethod

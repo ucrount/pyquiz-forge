@@ -33,6 +33,11 @@ EXPECTED_COLUMNS: list[tuple[str, str, str, str | None]] = [
     ("chapters",         "language", "VARCHAR(20) NOT NULL", "'python'"),
     ("knowledge_points", "language", "VARCHAR(20) NOT NULL", "'python'"),
     ("exercises",        "language", "VARCHAR(20) NOT NULL", "'python'"),
+    # Learning content + mastery (v0.3, added 2026-05)
+    ("knowledge_points", "content",            "TEXT NOT NULL",        "''"),
+    ("knowledge_points", "mastery",            "VARCHAR(20) NOT NULL", "'not_started'"),
+    ("knowledge_points", "mastery_note",       "TEXT NOT NULL",        "''"),
+    ("knowledge_points", "mastery_updated_at", "DATETIME",             None),
 ]
 
 

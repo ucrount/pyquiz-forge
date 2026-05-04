@@ -1,4 +1,4 @@
-import type { Language } from './common'
+import type { Language, Mastery } from './common'
 
 export interface KnowledgePoint {
   id: number
@@ -9,6 +9,12 @@ export interface KnowledgePoint {
   keywords: string[]
   description: string
   language: Language | string
+
+  // Learning content + mastery (v0.3)
+  content: string
+  mastery: Mastery
+  mastery_note: string
+  mastery_updated_at: string | null
 }
 
 export interface KnowledgePointCreate {
@@ -34,4 +40,11 @@ export interface KnowledgePointUpdate {
 export interface KnowledgePointCascadeInfo {
   knowledge_point_id: number
   exercises: number
+}
+
+export interface MasteryCounts {
+  not_started: number
+  learning: number
+  mastered: number
+  unknown: number
 }

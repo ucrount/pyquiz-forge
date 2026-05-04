@@ -13,6 +13,7 @@ def list_kps(
     db: Session,
     chapter_id: Optional[int] = None,
     language: Optional[str] = None,
+    mastery: Optional[List[str]] = None,
 ) -> List[KnowledgePoint]:
     stmt = select(KnowledgePoint).order_by(
         KnowledgePoint.language, KnowledgePoint.order_index
@@ -21,7 +22,22 @@ def list_kps(
         stmt = stmt.where(KnowledgePoint.chapter_id == chapter_id)
     if language:
         stmt = stmt.where(KnowledgePoint.language == language)
+    if mastery:
+        stmt = stmt.where(KnowledgePoint.mastery.in_(mastery))
     return list(db.execute(stmt).scalars().all())
+
+
+def count_by_mastery(
+    db: Session, language: Optional[str] = None
+) -> dict[str, int]:
+    """Return {'not_started': N, 'learning': N, 'mastered': N, 'unknown': N}."""
+    stmt = select(KnowledgePoint.mastery, func.count(KnowledgePoint.id)).group_by(
+        KnowledgePoint.mastery
+    )
+    if language:
+        stmt = stmt.where(KnowledgePoint.language == language)
+    rows = db.execute(stmt).all()
+    return {row[0]: int(row[1]) for row in rows}
 
 
 def get_kp(db: Session, kp_id: int) -> Optional[KnowledgePoint]:
