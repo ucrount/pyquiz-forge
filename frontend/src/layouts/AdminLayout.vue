@@ -2,8 +2,8 @@
   <el-container class="layout-root">
     <el-aside width="220px" class="layout-aside">
       <div class="brand">
-        <span class="brand-logo">⚒️</span>
-        <span class="brand-text">pyquiz-forge</span>
+        <span class="brand-logo">⬡</span>
+        <span class="brand-text">PYQUIZ <span class="brand-accent">FORGE</span></span>
       </div>
       <el-menu
         :default-active="activeRoute"
@@ -19,6 +19,10 @@
           <span>{{ item.title }}</span>
         </el-menu-item>
       </el-menu>
+      <div class="aside-footer">
+        <span class="status-dot pulse"></span>
+        <span class="status-text">SYSTEM ONLINE</span>
+      </div>
     </el-aside>
 
     <el-container>
@@ -28,11 +32,11 @@
           <el-select
             :model-value="langStore.current"
             size="small"
-            style="width: 130px"
+            style="width: 140px"
             @update:model-value="onLanguageChange"
           >
             <template #prefix>
-              <span class="lang-prefix">语言</span>
+              <span class="lang-prefix">LANG</span>
             </template>
             <el-option
               v-for="opt in LANGUAGE_OPTIONS"
@@ -42,10 +46,10 @@
             />
           </el-select>
           <el-tag v-if="activeLLMName" size="small" effect="plain" type="success">
-            激活: {{ activeLLMName }}
+            ▸ {{ activeLLMName }}
           </el-tag>
           <el-tag v-else size="small" effect="plain" type="warning">
-            未配置 LLM
+            ▸ 未配置 LLM
           </el-tag>
           <el-link
             type="primary"
@@ -53,7 +57,7 @@
             href="/docs"
             target="_blank"
           >
-            Swagger ↗
+            API ↗
           </el-link>
         </div>
       </el-header>
@@ -78,6 +82,7 @@ import {
   Setting,
   Document,
   Download,
+  Aim,
 } from '@element-plus/icons-vue'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { useLanguageStore } from '@/stores/language'
@@ -96,6 +101,7 @@ const menuItems: MenuItem[] = [
   { path: '/learning-path', title: '学习路线', icon: Reading },
   { path: '/generate', title: '题目生成', icon: MagicStick },
   { path: '/exercises', title: '题库管理', icon: Notebook },
+  { path: '/practice', title: '在线练习', icon: Aim },
   { path: '/llm-configs', title: '大模型配置', icon: Setting },
   { path: '/logs', title: '生成日志', icon: Document },
   { path: '/export', title: '导出题库', icon: Download },
@@ -122,77 +128,191 @@ onMounted(() => {
 <style scoped>
 .layout-root {
   height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 .layout-aside {
-  background: #001529;
-  color: #fff;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 12, 24, 0.95) 0%,
+    rgba(15, 22, 40, 0.95) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--el-border-color);
+  color: var(--el-text-color-primary);
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.layout-aside::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--neon-cyan) 50%,
+    transparent 100%
+  );
+  opacity: 0.4;
 }
 
 .brand {
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
   padding: 0 18px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  text-transform: uppercase;
 }
 
 .brand-logo {
-  font-size: 22px;
+  font-size: 24px;
   margin-right: 10px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px var(--neon-cyan);
+}
+
+.brand-text {
+  background: linear-gradient(
+    90deg,
+    var(--el-text-color-primary) 0%,
+    var(--neon-cyan) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-accent {
+  color: var(--neon-cyan);
+  -webkit-text-fill-color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
 }
 
 .layout-menu {
   border-right: none;
   flex: 1;
-  background: #001529;
+  background: transparent;
+  padding-top: 8px;
 }
 
 .layout-menu :deep(.el-menu-item) {
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--el-text-color-regular);
+  height: 44px;
+  line-height: 44px;
+  margin: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
 }
 
-.layout-menu :deep(.el-menu-item:hover),
+.layout-menu :deep(.el-menu-item:hover) {
+  background: rgba(0, 212, 255, 0.08) !important;
+  color: var(--neon-cyan) !important;
+}
+
 .layout-menu :deep(.el-menu-item.is-active) {
-  background-color: #1890ff;
-  color: #fff;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 212, 255, 0.15) 0%,
+    rgba(0, 212, 255, 0.05) 100%
+  ) !important;
+  color: var(--neon-cyan) !important;
+  border-left: 2px solid var(--neon-cyan);
+  box-shadow: inset 0 0 12px rgba(0, 212, 255, 0.1);
+}
+
+.layout-menu :deep(.el-menu-item .el-icon) {
+  font-size: 18px;
+}
+
+.aside-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--el-text-color-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+}
+
+.status-text {
+  font-weight: 600;
+  color: var(--neon-green);
 }
 
 .layout-header {
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: rgba(15, 22, 40, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--el-border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 28px;
+  position: relative;
+}
+
+.layout-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--neon-cyan) 50%,
+    transparent 100%
+  );
+  opacity: 0.3;
 }
 
 .header-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  letter-spacing: 0.6px;
+  color: var(--el-text-color-primary);
+  text-transform: uppercase;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .layout-main {
-  background: #f5f7fa;
+  background: transparent;
   padding: 0;
   overflow-y: auto;
 }
 
 .lang-prefix {
-  color: #909399;
-  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  font-size: 11px;
   margin-right: 4px;
+  letter-spacing: 0.6px;
 }
 </style>

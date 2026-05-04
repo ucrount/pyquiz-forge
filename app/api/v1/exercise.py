@@ -20,6 +20,7 @@ router = APIRouter(prefix="/exercises", tags=["exercises"])
 @router.get("", response_model=PageResult[ExerciseListItem])
 def list_exercises(
     knowledge_point_id: Optional[int] = None,
+    chapter_id: Optional[int] = None,
     language: Optional[str] = None,
     difficulty: Optional[Difficulty] = None,
     question_type: Optional[QuestionType] = None,
@@ -32,6 +33,7 @@ def list_exercises(
     items, total = crud_exercise.list_exercises(
         db,
         knowledge_point_id=knowledge_point_id,
+        chapter_id=chapter_id,
         language=language,
         difficulty=difficulty.value if difficulty else None,
         question_type=question_type.value if question_type else None,

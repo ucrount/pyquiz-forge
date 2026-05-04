@@ -1,5 +1,5 @@
 """Generation request/response schemas."""
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,8 +30,29 @@ class BatchGenerateRequest(BaseModel):
 
 
 class BatchGenerateResult(BaseModel):
+    """Legacy synchronous result. Kept for compat."""
     succeeded: List[ExerciseRead] = []
     failed: List[dict] = []  # {difficulty, question_type, error}
+
+
+class BatchJobCreated(BaseModel):
+    """Returned by the async batch endpoint after creating a background job."""
+    job_id: str
+    total: int
+
+
+class JobProgress(BaseModel):
+    """Polled by frontend to render the progress bar."""
+    id: str
+    kind: str = "generation"
+    status: str  # running | done | failed
+    total: int
+    completed: int
+    current: str = ""
+    succeeded: List[int] = Field(default_factory=list)
+    failed: List[dict] = Field(default_factory=list)
+    created_at: float = 0
+    finished_at: Optional[float] = None
 
 
 class RegenerateRequest(BaseModel):

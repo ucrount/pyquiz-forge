@@ -1,22 +1,24 @@
-"""Generation endpoints: single, batch, regenerate."""
+"""Generation endpoints: single, batch (async), regenerate, jobs."""
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.core.database import SessionLocal
 from app.crud import exercise as crud_exercise
 from app.crud import generation_log as crud_log
 from app.schemas.exercise import ExerciseRead
 from app.schemas.generation import (
     BatchGenerateRequest,
-    BatchGenerateResult,
+    BatchJobCreated,
     GenerateRequest,
     GenerationLogDetail,
     GenerationLogRead,
+    JobProgress,
     RegenerateRequest,
 )
-from app.services import generation_service
+from app.services import generation_service, job_service
 from app.services.generation_service import GenerationError
 
 router = APIRouter(tags=["generation"])
@@ -37,37 +39,101 @@ def generate_one(req: GenerateRequest, db: Session = Depends(get_db)):
     return ex
 
 
+def _run_batch_job(
+    job_id: str,
+    knowledge_point_id: int,
+    items: list,
+    llm_config_id: int | None,
+) -> None:
+    """Background task: iterate items, generate one by one, update job state."""
+    db = SessionLocal()
+    try:
+        for item in items:
+            for n in range(item["count"]):
+                label = f"{item['difficulty']}/{item['question_type']} ({n + 1}/{item['count']})"
+                job_service.update_job(job_id, current=label)
+                try:
+                    ex = generation_service.generate_one(
+                        db,
+                        knowledge_point_id=knowledge_point_id,
+                        difficulty=item["difficulty"],
+                        question_type=item["question_type"],
+                        llm_config_id=llm_config_id,
+                    )
+                    job_service.progress_job(
+                        job_id,
+                        current_label=label,
+                        succeeded_id=ex.id,
+                    )
+                except GenerationError as e:
+                    job_service.progress_job(
+                        job_id,
+                        current_label=label,
+                        failed={
+                            "difficulty": item["difficulty"],
+                            "question_type": item["question_type"],
+                            "error": str(e),
+                        },
+                    )
+                except Exception as e:  # 兜底，防止后台任务死掉
+                    job_service.progress_job(
+                        job_id,
+                        current_label=label,
+                        failed={
+                            "difficulty": item["difficulty"],
+                            "question_type": item["question_type"],
+                            "error": f"unexpected: {type(e).__name__}: {e}",
+                        },
+                    )
+        job_service.finish_job(job_id, status="done")
+    finally:
+        db.close()
+
+
 @router.post(
     "/exercises/generate/batch",
-    response_model=BatchGenerateResult,
-    status_code=201,
+    response_model=BatchJobCreated,
+    status_code=202,
 )
-def generate_batch(req: BatchGenerateRequest, db: Session = Depends(get_db)):
-    succeeded: List = []
-    failed: List[dict] = []
-    for item in req.items:
-        for _ in range(item.count):
-            try:
-                ex = generation_service.generate_one(
-                    db,
-                    knowledge_point_id=req.knowledge_point_id,
-                    difficulty=item.difficulty,
-                    question_type=item.question_type,
-                    llm_config_id=req.llm_config_id,
-                )
-                succeeded.append(ex)
-            except GenerationError as e:
-                failed.append(
-                    {
-                        "difficulty": item.difficulty.value,
-                        "question_type": item.question_type.value,
-                        "error": str(e),
-                    }
-                )
-    return BatchGenerateResult(
-        succeeded=[ExerciseRead.model_validate(s) for s in succeeded],
-        failed=failed,
+def generate_batch(
+    req: BatchGenerateRequest,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Kick off a background batch generation job.
+    Returns immediately with `job_id`; client polls /generation-jobs/{id}.
+    """
+    total = sum(item.count for item in req.items)
+    if total == 0:
+        raise HTTPException(status_code=400, detail="items has zero total count")
+
+    job_id = job_service.create_job(total=total, kind="batch_generation")
+
+    # Convert pydantic items to plain dicts so the BG task is decoupled
+    items_payload = [
+        {
+            "difficulty": item.difficulty.value,
+            "question_type": item.question_type.value,
+            "count": item.count,
+        }
+        for item in req.items
+    ]
+    background_tasks.add_task(
+        _run_batch_job,
+        job_id,
+        req.knowledge_point_id,
+        items_payload,
+        req.llm_config_id,
     )
+    return BatchJobCreated(job_id=job_id, total=total)
+
+
+@router.get("/generation-jobs/{job_id}", response_model=JobProgress)
+def get_generation_job(job_id: str):
+    job = job_service.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return JobProgress(**job)
 
 
 @router.post(

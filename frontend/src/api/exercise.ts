@@ -13,6 +13,7 @@ import type {
 
 interface ListParams {
   knowledge_point_id?: number
+  chapter_id?: number
   language?: string
   difficulty?: Difficulty
   question_type?: QuestionType

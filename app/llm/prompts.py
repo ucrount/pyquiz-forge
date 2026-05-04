@@ -93,12 +93,23 @@ def render_user_prompt(
     difficulty: Difficulty,
     question_type: QuestionType,
     language: str,
+    existing_titles: list[str] | None = None,
 ) -> str:
     keywords = _parse_keywords(kp.keywords)
     keywords_text = "、".join(keywords) if keywords else "（未提供）"
     diff_desc = DIFFICULTY_DESC.get(difficulty, "")
     qt_desc = QUESTION_TYPE_DESC.get(question_type, "")
     label = language_label(language)
+
+    avoid_block = ""
+    if existing_titles:
+        bullet_list = "\n".join(f"- {t}" for t in existing_titles)
+        avoid_block = f"""
+
+【避免重复】请勿生成与以下已有题目重复或过于相似的题目（标题和考点都要避免雷同）：
+{bullet_list}
+"""
+
     return f"""请生成一道 {label} 练习题，要求如下：
 
 【语言】{label}
@@ -107,7 +118,7 @@ def render_user_prompt(
 【知识点关键词】{keywords_text}
 【知识点描述】{kp.description or '（未提供）'}
 【难度】{difficulty.value}（{diff_desc}）
-【题型】{question_type.value}（{qt_desc}）
+【题型】{question_type.value}（{qt_desc}）{avoid_block}
 
 请按以下 JSON 格式严格输出：
 
@@ -123,6 +134,7 @@ def build_messages(
     difficulty: Difficulty,
     question_type: QuestionType,
     language: str,
+    existing_titles: list[str] | None = None,
 ) -> List[dict]:
     return [
         {"role": "system", "content": _system_prompt(language)},
@@ -134,6 +146,7 @@ def build_messages(
                 difficulty=difficulty,
                 question_type=question_type,
                 language=language,
+                existing_titles=existing_titles,
             ),
         },
     ]

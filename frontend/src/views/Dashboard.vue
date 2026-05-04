@@ -1,46 +1,67 @@
 <template>
   <div class="page">
-    <div class="page-header"><h2>概览</h2></div>
+    <div class="page-header">
+      <h2>SYSTEM OVERVIEW</h2>
+      <span class="header-meta">
+        <span class="meta-key">LANG</span>
+        <span class="meta-value">{{ langLabel }}</span>
+      </span>
+    </div>
 
     <el-row :gutter="16" class="stat-row">
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card stat-blue">
-          <div class="stat-label">{{ langLabel }} 章节</div>
-          <div class="stat-value">{{ stats.chapters }}</div>
-        </el-card>
+        <CyberCard accent="cyan">
+          <StatNumber
+            :label="`${langLabel} 章节`"
+            :value="stats.chapters"
+            accent="cyan"
+          />
+        </CyberCard>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card stat-green">
-          <div class="stat-label">{{ langLabel }} 知识点</div>
-          <div class="stat-value">{{ stats.kps }}</div>
-        </el-card>
+        <CyberCard accent="green">
+          <StatNumber
+            :label="`${langLabel} 知识点`"
+            :value="stats.kps"
+            accent="green"
+          />
+        </CyberCard>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card stat-orange">
-          <div class="stat-label">{{ langLabel }} 题目</div>
-          <div class="stat-value">{{ stats.exercises }}</div>
-        </el-card>
+        <CyberCard accent="purple">
+          <StatNumber
+            :label="`${langLabel} 题目`"
+            :value="stats.exercises"
+            accent="purple"
+          />
+        </CyberCard>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card stat-purple">
-          <div class="stat-label">激活 LLM</div>
-          <div class="stat-value text" :title="activeLLMName || '未配置'">
-            {{ activeLLMName || '未配置' }}
+        <CyberCard accent="pink">
+          <div class="llm-cell">
+            <div class="stat-label">LLM ACTIVE</div>
+            <div class="llm-name" :title="activeLLMName || '未配置'">
+              {{ activeLLMName || '— offline —' }}
+            </div>
           </div>
-        </el-card>
+        </CyberCard>
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" style="margin-top:16px">
+    <el-row :gutter="16" style="margin-top: 16px">
       <el-col :span="14">
-        <el-card shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span>最近生成日志</span>
-              <el-link type="primary" @click="$router.push('/logs')">查看全部 →</el-link>
-            </div>
+        <CyberCard title="RECENT GENERATION LOGS" accent="cyan">
+          <template #extra>
+            <el-link type="primary" :underline="false" @click="$router.push('/logs')">
+              ALL LOGS →
+            </el-link>
           </template>
-          <el-table :data="recentLogs" v-loading="loadingLogs" empty-text="暂无生成记录" size="small">
+          <el-table
+            :data="recentLogs"
+            v-loading="loadingLogs"
+            empty-text="暂无生成记录"
+            size="small"
+          >
             <el-table-column prop="id" label="ID" width="60" />
             <el-table-column label="知识点" width="80">
               <template #default="{ row }">#{{ row.knowledge_point_id ?? '-' }}</template>
@@ -57,20 +78,19 @@
             </el-table-column>
             <el-table-column label="状态" width="70">
               <template #default="{ row }">
-                <el-tag v-if="row.parsed_ok" type="success" size="small">成功</el-tag>
-                <el-tag v-else type="danger" size="small">失败</el-tag>
+                <el-tag v-if="row.parsed_ok" type="success" size="small">OK</el-tag>
+                <el-tag v-else type="danger" size="small">FAIL</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="耗时" width="80">
               <template #default="{ row }">{{ formatDuration(row.latency_ms) }}</template>
             </el-table-column>
           </el-table>
-        </el-card>
+        </CyberCard>
       </el-col>
 
       <el-col :span="10">
-        <el-card shadow="never">
-          <template #header><span>快捷入口</span></template>
+        <CyberCard title="QUICK ACCESS" accent="purple">
           <div class="actions">
             <el-button
               type="primary"
@@ -79,23 +99,30 @@
             >
               <el-icon><MagicStick /></el-icon><span>生成题目</span>
             </el-button>
-            <el-button size="large" @click="$router.push('/llm-configs')">
-              <el-icon><Setting /></el-icon><span>大模型配置</span>
+            <el-button
+              type="success"
+              size="large"
+              @click="$router.push('/practice')"
+            >
+              <el-icon><Aim /></el-icon><span>开始练习</span>
             </el-button>
             <el-button size="large" @click="$router.push('/exercises')">
-              <el-icon><Notebook /></el-icon><span>题库管理</span>
+              <el-icon><Notebook /></el-icon><span>题库</span>
             </el-button>
-            <el-button size="large" @click="$router.push('/export')">
-              <el-icon><Download /></el-icon><span>导出题库</span>
+            <el-button size="large" @click="$router.push('/llm-configs')">
+              <el-icon><Setting /></el-icon><span>LLM 配置</span>
             </el-button>
           </div>
           <el-divider />
           <p class="hint">
-            提示：第一次使用，请先在
-            <el-link type="primary" @click="$router.push('/llm-configs')">大模型配置</el-link>
-            添加并激活一条配置。
+            <span class="hint-prefix">▸</span>
+            首次使用：去
+            <el-link type="primary" :underline="false" @click="$router.push('/llm-configs')">
+              大模型配置
+            </el-link>
+            添加并激活一条 API Key。
           </p>
-        </el-card>
+        </CyberCard>
       </el-col>
     </el-row>
   </div>
@@ -107,7 +134,7 @@ import {
   MagicStick,
   Setting,
   Notebook,
-  Download,
+  Aim,
 } from '@element-plus/icons-vue'
 import {
   learningPathApi,
@@ -121,6 +148,8 @@ import { formatDuration } from '@/utils/format'
 import type { GenerationLog } from '@/types/generation'
 import DifficultyTag from '@/components/DifficultyTag.vue'
 import QuestionTypeTag from '@/components/QuestionTypeTag.vue'
+import CyberCard from '@/components/CyberCard.vue'
+import StatNumber from '@/components/StatNumber.vue'
 
 const llmStore = useLLMConfigStore()
 const langStore = useLanguageStore()
@@ -168,53 +197,47 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.header-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.meta-key {
+  color: var(--el-text-color-secondary);
+}
+.meta-value {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
 .stat-row {
   margin-bottom: 0;
 }
 
-.stat-card {
-  border-left: 4px solid #409eff;
-}
-
-.stat-blue {
-  border-left-color: #409eff;
-}
-
-.stat-green {
-  border-left-color: #67c23a;
-}
-
-.stat-orange {
-  border-left-color: #e6a23c;
-}
-
-.stat-purple {
-  border-left-color: #b88ce6;
-}
-
 .stat-label {
-  color: #909399;
-  font-size: 13px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--el-text-color-secondary);
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #303133;
-  margin-top: 4px;
+.llm-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-
-.stat-value.text {
+.llm-name {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
   font-size: 18px;
+  font-weight: 600;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(255, 77, 141, 0.4);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .actions {
@@ -226,12 +249,17 @@ onMounted(async () => {
 .actions .el-button {
   margin-left: 0 !important;
   width: 100%;
+  height: 44px;
 }
 
 .hint {
   margin: 0;
   font-size: 13px;
-  color: #606266;
+  color: var(--el-text-color-regular);
   line-height: 1.6;
+}
+.hint-prefix {
+  color: var(--neon-cyan);
+  margin-right: 6px;
 }
 </style>

@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '题库管理', icon: 'Notebook' },
       },
       {
+        path: 'practice',
+        name: 'practice',
+        component: () => import('@/views/Practice.vue'),
+        meta: { title: '在线练习', icon: 'Aim' },
+      },
+      {
         path: 'llm-configs',
         name: 'llm-configs',
         component: () => import('@/views/LLMConfigs.vue'),

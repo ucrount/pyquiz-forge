@@ -7,6 +7,7 @@ from app.api.v1 import (
     generation,
     learning_path,
     llm_config,
+    practice,
     scoring,
     system,
 )
@@ -18,4 +19,5 @@ api_router.include_router(llm_config.router)
 api_router.include_router(generation.router)
 api_router.include_router(scoring.router)
 api_router.include_router(exercise.router)
+api_router.include_router(practice.router)
 api_router.include_router(export.router)

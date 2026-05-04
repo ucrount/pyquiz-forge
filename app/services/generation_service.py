@@ -144,15 +144,30 @@ def generate_one(
     difficulty: Difficulty,
     question_type: QuestionType,
     llm_config_id: Optional[int] = None,
+    avoid_duplicates: bool = True,
+    _dedup_retry_left: int = 1,
 ) -> Exercise:
     """
     Generate a single exercise. Persists both the generation_log and (on success)
     the exercise. Raises GenerationError on failure (log is still saved).
+
+    When avoid_duplicates=True (default):
+      - Existing titles for the same KP are injected into the prompt as
+        "please avoid these"
+      - After parsing, the new title is compared against existing ones; if too
+        similar (>= 0.7 ratio), we retry up to `_dedup_retry_left` times
+        before giving up
     """
+    from app.services import dedup_service  # local import to avoid cycle
+
     cfg = _resolve_llm_config(db, llm_config_id)
     kp = _resolve_kp(db, knowledge_point_id)
     chapter_title = kp.chapter.title if kp.chapter else ""
     language = kp.language or "python"
+
+    existing_titles = (
+        dedup_service.get_existing_titles(db, kp.id) if avoid_duplicates else []
+    )
 
     messages = build_messages(
         kp=kp,
@@ -160,6 +175,7 @@ def generate_one(
         difficulty=difficulty,
         question_type=question_type,
         language=language,
+        existing_titles=existing_titles,
     )
     prompt_text = json.dumps(messages, ensure_ascii=False)
 
@@ -194,10 +210,35 @@ def generate_one(
     if parsed is None:
         raise GenerationError(error_message or "Empty response from LLM.")
 
+    new_title = str(parsed.get("title") or "(untitled)")[:200]
+
+    # Dedup check after parse — retry once if too similar
+    if avoid_duplicates and existing_titles:
+        hit = dedup_service.find_too_similar(new_title, existing_titles)
+        if hit is not None:
+            logger.warning(
+                "Generated title %r too similar to existing %r", new_title, hit
+            )
+            if _dedup_retry_left > 0:
+                logger.info("Retrying generation to avoid duplicate ...")
+                return generate_one(
+                    db,
+                    knowledge_point_id=knowledge_point_id,
+                    difficulty=difficulty,
+                    question_type=question_type,
+                    llm_config_id=llm_config_id,
+                    avoid_duplicates=True,
+                    _dedup_retry_left=_dedup_retry_left - 1,
+                )
+            raise GenerationError(
+                f"生成的题目「{new_title}」与已有题目「{hit}」相似度过高，"
+                "请稍后再试或更换难度/题型。"
+            )
+
     # Build exercise from parsed fields (be lenient — fall back to "" / [] / {})
     exercise = crud_exercise.create_exercise(
         db,
-        title=str(parsed.get("title") or "(untitled)")[:200],
+        title=new_title,
         knowledge_point_id=kp.id,
         language=language,
         difficulty=difficulty.value,

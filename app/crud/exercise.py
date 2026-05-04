@@ -2,7 +2,7 @@
 import json
 from typing import List, Optional, Tuple
 
-from sqlalchemy import select, func, delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Exercise
@@ -64,13 +64,18 @@ def list_exercises(
     db: Session,
     *,
     knowledge_point_id: Optional[int] = None,
+    knowledge_point_ids: Optional[List[int]] = None,
+    chapter_id: Optional[int] = None,
     language: Optional[str] = None,
     difficulty: Optional[str] = None,
+    difficulties: Optional[List[str]] = None,
     question_type: Optional[str] = None,
+    question_types: Optional[List[str]] = None,
     status: Optional[str] = None,
     min_score: Optional[float] = None,
     page: int = 1,
     size: int = 20,
+    random_order: bool = False,
 ) -> Tuple[List[Exercise], int]:
     stmt = select(Exercise)
     count_stmt = select(func.count(Exercise.id))
@@ -78,12 +83,25 @@ def list_exercises(
     filters = []
     if knowledge_point_id is not None:
         filters.append(Exercise.knowledge_point_id == knowledge_point_id)
+    if knowledge_point_ids:
+        filters.append(Exercise.knowledge_point_id.in_(knowledge_point_ids))
+    if chapter_id is not None:
+        # Subquery: KPs in this chapter
+        from app.models import KnowledgePoint
+        kp_ids_stmt = select(KnowledgePoint.id).where(
+            KnowledgePoint.chapter_id == chapter_id
+        )
+        filters.append(Exercise.knowledge_point_id.in_(kp_ids_stmt))
     if language:
         filters.append(Exercise.language == language)
     if difficulty:
         filters.append(Exercise.difficulty == difficulty)
+    if difficulties:
+        filters.append(Exercise.difficulty.in_(difficulties))
     if question_type:
         filters.append(Exercise.question_type == question_type)
+    if question_types:
+        filters.append(Exercise.question_type.in_(question_types))
     if status:
         filters.append(Exercise.status == status)
     if min_score is not None:
@@ -94,7 +112,11 @@ def list_exercises(
         count_stmt = count_stmt.where(f)
 
     total = db.execute(count_stmt).scalar_one()
-    stmt = stmt.order_by(Exercise.id.desc()).offset((page - 1) * size).limit(size)
+    if random_order:
+        stmt = stmt.order_by(func.random())
+    else:
+        stmt = stmt.order_by(Exercise.id.desc())
+    stmt = stmt.offset((page - 1) * size).limit(size)
     items = list(db.execute(stmt).scalars().all())
     return items, total
 
