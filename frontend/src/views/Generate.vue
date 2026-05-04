@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page page--medium">
     <div class="page-header">
       <h2>EXERCISE GENERATOR</h2>
       <div>

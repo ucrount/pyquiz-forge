@@ -391,7 +391,7 @@ onMounted(loadChapters)
 }
 
 .setup-card {
-  max-width: 880px;
+  width: 100%;
 }
 
 .muted {
@@ -428,7 +428,6 @@ onMounted(loadChapters)
 }
 
 .practice-card {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
 }
 </style>

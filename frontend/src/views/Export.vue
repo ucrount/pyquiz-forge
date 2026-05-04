@@ -164,7 +164,7 @@ onMounted(updateMatchCount)
 
 <style scoped>
 .export-card {
-  max-width: 720px;
+  max-width: 980px;
 }
 
 .match-info {

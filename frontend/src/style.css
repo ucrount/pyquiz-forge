@@ -656,3 +656,217 @@ a {
 .pulse {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ====================================================== */
+/* 单独控件文字色覆盖（被通用 --el-text-color-* 盖不到的地方）*/
+/* ====================================================== */
+
+/* Form item 标签 — 提到 primary 级，让 "练习范围" 等 label 始终高对比 */
+.el-form-item__label {
+  color: var(--el-text-color-primary) !important;
+  font-weight: 500;
+}
+
+/* Radio / Radio Button —— 这是 Practice 页"整个语言/某个章节/某个知识点"的元凶 */
+.el-radio__label,
+.el-radio-button__inner {
+  color: var(--el-text-color-primary) !important;
+  font-weight: 500;
+}
+
+.el-radio-button__inner {
+  background: rgba(15, 22, 40, 0.5) !important;
+  border-color: var(--el-border-color) !important;
+  transition: all 0.2s ease;
+}
+
+.el-radio-button__inner:hover {
+  color: var(--neon-cyan) !important;
+  border-color: var(--neon-cyan) !important;
+}
+
+.el-radio-button.is-active .el-radio-button__inner,
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--neon-cyan) !important;
+  color: #02121a !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.5),
+    -1px 0 0 0 var(--neon-cyan) !important;
+  font-weight: 600;
+}
+
+/* Minimal 主题下 radio-button 的 active 文字得反过来用浅黑 */
+[data-theme='minimal'] .el-radio-button.is-active .el-radio-button__inner,
+[data-theme='minimal'] .el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--neon-cyan) !important;
+  color: #0a0a0a !important;
+}
+
+/* Checkbox 标签 */
+.el-checkbox__label {
+  color: var(--el-text-color-primary) !important;
+}
+.el-checkbox__inner {
+  background: rgba(15, 22, 40, 0.5) !important;
+  border-color: var(--el-border-color) !important;
+}
+.el-checkbox.is-checked .el-checkbox__inner {
+  background: var(--neon-cyan) !important;
+  border-color: var(--neon-cyan) !important;
+}
+.el-checkbox.is-checked .el-checkbox__label {
+  color: var(--neon-cyan) !important;
+}
+
+/* Tabs（Review 页的那 5 个 Tab） */
+.el-tabs__item {
+  color: var(--el-text-color-regular) !important;
+  font-weight: 500;
+}
+.el-tabs__item:hover {
+  color: var(--el-text-color-primary) !important;
+}
+.el-tabs__item.is-active {
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+.el-tabs__active-bar {
+  background-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+/* Drawer / Dialog 标题 */
+.el-drawer__title,
+.el-dialog__title {
+  color: var(--el-text-color-primary) !important;
+  font-weight: 600;
+}
+
+/* MessageBox content */
+.el-message-box__title,
+.el-message-box__content,
+.el-message-box__message p {
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Pagination — total 数 / "前往第 N 页" 等说明文字 */
+.el-pagination__total,
+.el-pagination__jump,
+.el-pagination__sizes,
+.el-pagination__goto {
+  color: var(--el-text-color-regular) !important;
+}
+
+/* Cascader option（KnowledgePointPicker 的下拉项） */
+.el-cascader-node__label {
+  color: var(--el-text-color-primary) !important;
+}
+.el-cascader-node.in-active-path,
+.el-cascader-node.is-active {
+  color: var(--neon-cyan) !important;
+}
+
+/* Select dropdown items */
+.el-select-dropdown__item {
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Loading mask 文字 */
+.el-loading-text {
+  color: var(--neon-cyan) !important;
+}
+
+/* Empty 描述 */
+.el-empty__description p {
+  color: var(--el-text-color-secondary) !important;
+}
+
+/* Collapse */
+.el-collapse-item__header {
+  background: transparent !important;
+  color: var(--el-text-color-primary) !important;
+  border-color: var(--el-border-color-lighter) !important;
+}
+.el-collapse-item__content {
+  background: transparent !important;
+  color: var(--el-text-color-regular) !important;
+}
+.el-collapse-item__wrap {
+  background: transparent !important;
+  border-color: var(--el-border-color-lighter) !important;
+}
+
+/* Descriptions（生成日志详情用） */
+.el-descriptions__label {
+  color: var(--el-text-color-secondary) !important;
+}
+.el-descriptions__content {
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Progress 文字 */
+.el-progress__text {
+  color: var(--el-text-color-primary) !important;
+}
+
+/* Steps 文字 */
+.el-step__title {
+  color: var(--el-text-color-regular) !important;
+}
+.el-step__description {
+  color: var(--el-text-color-secondary) !important;
+}
+
+/* ===========================================================
+   高对比度模式：放大覆盖到所有上述控件
+   =========================================================== */
+[data-contrast='high'] .el-radio-button__inner,
+[data-contrast='high'] .el-radio__label,
+[data-contrast='high'] .el-checkbox__label,
+[data-contrast='high'] .el-form-item__label,
+[data-contrast='high'] .el-drawer__title,
+[data-contrast='high'] .el-dialog__title,
+[data-contrast='high'] .el-cascader-node__label,
+[data-contrast='high'] .el-select-dropdown__item,
+[data-contrast='high'] .el-descriptions__content,
+[data-contrast='high'] .el-progress__text,
+[data-contrast='high'] .el-step__title {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+[data-contrast='high'] .el-tabs__item {
+  color: #e8eef8 !important;
+}
+
+[data-contrast='high'] .el-pagination__total,
+[data-contrast='high'] .el-pagination__jump,
+[data-contrast='high'] .el-pagination__sizes,
+[data-contrast='high'] .el-pagination__goto,
+[data-contrast='high'] .el-descriptions__label,
+[data-contrast='high'] .el-step__description {
+  color: #c8d0e0 !important;
+}
+
+/* ===========================================================
+   统一页面宽度规范
+   .page         — 默认全宽（列表型页面）
+   .page--narrow — 最大 1100px（窄表单：设置）
+   .page--medium — 最大 1400px（中等宽：练习答题）
+   =========================================================== */
+
+.page {
+  padding: 20px 28px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.page--narrow {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page--medium {
+  max-width: 1400px;
+  margin: 0 auto;
+}

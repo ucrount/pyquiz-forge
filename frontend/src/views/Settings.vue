@@ -1,5 +1,5 @@
 <template>
-  <div class="page settings-page">
+  <div class="page page--narrow settings-page">
     <div class="page-header">
       <h2>SETTINGS</h2>
     </div>
@@ -230,7 +230,7 @@ watch(prefs, savePrefs, { deep: true })
 
 <style scoped>
 .settings-page {
-  max-width: 1100px;
+  /* 用全局 .page--narrow 控制宽度 */
 }
 
 .settings-card {
