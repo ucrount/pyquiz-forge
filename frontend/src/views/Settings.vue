@@ -36,6 +36,64 @@
       </div>
     </CyberCard>
 
+    <CyberCard accent="green" class="settings-card">
+      <template #header>
+        <span class="cyber-card__title">▸ 可读性</span>
+      </template>
+      <el-form label-position="top">
+        <el-form-item label="对比度">
+          <el-radio-group
+            :model-value="theme.contrast"
+            @update:model-value="(v: any) => theme.setContrast(v)"
+          >
+            <el-radio-button
+              v-for="opt in CONTRAST_OPTIONS"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </el-radio-button>
+          </el-radio-group>
+          <span class="muted ml">
+            {{ CONTRAST_OPTIONS.find(o => o.value === theme.contrast)?.hint }}
+          </span>
+        </el-form-item>
+
+        <el-form-item label="字号">
+          <el-radio-group
+            :model-value="theme.fontSize"
+            @update:model-value="(v: any) => theme.setFontSize(v)"
+          >
+            <el-radio-button
+              v-for="opt in FONT_OPTIONS"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+              <span class="opt-hint mono">{{ opt.hint }}</span>
+            </el-radio-button>
+          </el-radio-group>
+          <span class="muted ml">影响整体页面字号</span>
+        </el-form-item>
+
+        <el-form-item label="效果预览">
+          <div class="contrast-preview">
+            <h4 class="preview-h4">这是主标题（primary）</h4>
+            <p class="preview-p">
+              这是正文文字（regular）—— 这一行用来感觉对比度。
+              切换主题或对比度时，这段文字应该始终清晰可读。
+            </p>
+            <p class="preview-secondary">
+              这是次要文字（secondary）—— 标签 / 说明性文字常用这个色阶。
+            </p>
+            <p class="preview-placeholder">
+              这是占位符文字（placeholder）—— 如输入框未填时的提示。
+            </p>
+          </div>
+        </el-form-item>
+      </el-form>
+    </CyberCard>
+
     <CyberCard accent="purple" class="settings-card">
       <template #header>
         <span class="cyber-card__title">▸ 默认练习偏好</span>
@@ -76,14 +134,14 @@
       </el-form>
     </CyberCard>
 
-    <CyberCard accent="green" class="settings-card">
+    <CyberCard accent="cyan" class="settings-card">
       <template #header>
         <span class="cyber-card__title">▸ 关于</span>
       </template>
       <div class="about-grid">
         <div>
           <span class="muted">版本</span>
-          <span class="mono neon-text-cyan">v0.3.0</span>
+          <span class="mono neon-text-cyan">v0.3.1</span>
         </div>
         <div>
           <span class="muted">许可</span>
@@ -113,7 +171,12 @@
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { useThemeStore, THEMES } from '@/stores/theme'
+import {
+  useThemeStore,
+  THEMES,
+  CONTRAST_OPTIONS,
+  FONT_OPTIONS,
+} from '@/stores/theme'
 import {
   DIFFICULTY_OPTIONS,
   QUESTION_TYPE_OPTIONS,
@@ -292,6 +355,47 @@ watch(prefs, savePrefs, { deep: true })
 
 .ml {
   margin-left: 8px;
+}
+
+.opt-hint {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.contrast-preview {
+  padding: 14px 18px;
+  width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid var(--el-border-color);
+  border-radius: 6px;
+}
+
+.preview-h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.preview-p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  line-height: 1.6;
+}
+
+.preview-secondary {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.6;
+}
+
+.preview-placeholder {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--el-text-color-placeholder);
 }
 
 .about-grid {

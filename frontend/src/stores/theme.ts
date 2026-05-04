@@ -43,37 +43,76 @@ export const THEMES: ThemeMeta[] = [
   },
 ]
 
-const STORAGE_KEY = 'pyquiz.theme'
-const VALID_IDS = THEMES.map((t) => t.id)
+export type ContrastLevel = 'normal' | 'high'
+export type FontSize = 'small' | 'normal' | 'large' | 'xlarge'
 
-function loadInitial(): ThemeId {
-  const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null
-  if (saved && VALID_IDS.includes(saved)) return saved
-  return 'cyber'
+export const CONTRAST_OPTIONS: { value: ContrastLevel; label: string; hint: string }[] = [
+  { value: 'normal', label: '标准', hint: '默认对比度，沉浸感强' },
+  { value: 'high', label: '高对比度', hint: '正文文字更亮，看着更清楚' },
+]
+
+export const FONT_OPTIONS: { value: FontSize; label: string; hint: string }[] = [
+  { value: 'small', label: '紧凑', hint: '12.5 px' },
+  { value: 'normal', label: '标准', hint: '14 px' },
+  { value: 'large', label: '舒适', hint: '16 px' },
+  { value: 'xlarge', label: '阅读', hint: '17.5 px' },
+]
+
+const VALID_THEMES = THEMES.map((t) => t.id)
+const VALID_CONTRAST: ContrastLevel[] = ['normal', 'high']
+const VALID_FONT: FontSize[] = ['small', 'normal', 'large', 'xlarge']
+
+const STORAGE_KEY = 'pyquiz.theme'
+const CONTRAST_KEY = 'pyquiz.contrast'
+const FONT_KEY = 'pyquiz.fontSize'
+
+function pick<T extends string>(
+  v: string | null,
+  valid: readonly T[],
+  fallback: T,
+): T {
+  return v && (valid as readonly string[]).includes(v) ? (v as T) : fallback
 }
 
-function applyToDocument(id: ThemeId) {
-  document.documentElement.setAttribute('data-theme', id)
+function applyToDocument(
+  theme: ThemeId,
+  contrast: ContrastLevel,
+  fontSize: FontSize,
+) {
+  const html = document.documentElement
+  html.setAttribute('data-theme', theme)
+  // contrast=normal → remove the attr to keep CSS clean
+  if (contrast === 'high') html.setAttribute('data-contrast', 'high')
+  else html.removeAttribute('data-contrast')
+  html.setAttribute('data-font', fontSize)
 }
 
 export const useThemeStore = defineStore('theme', () => {
-  const current = ref<ThemeId>(loadInitial())
+  const current = ref<ThemeId>(
+    pick(localStorage.getItem(STORAGE_KEY), VALID_THEMES, 'cyber'),
+  )
+  const contrast = ref<ContrastLevel>(
+    pick(localStorage.getItem(CONTRAST_KEY), VALID_CONTRAST, 'normal'),
+  )
+  const fontSize = ref<FontSize>(
+    pick(localStorage.getItem(FONT_KEY), VALID_FONT, 'normal'),
+  )
 
   // Apply immediately on store creation
-  applyToDocument(current.value)
+  applyToDocument(current.value, contrast.value, fontSize.value)
 
-  function setTheme(id: ThemeId) {
-    current.value = id
-  }
+  function setTheme(id: ThemeId) { current.value = id }
+  function setContrast(c: ContrastLevel) { contrast.value = c }
+  function setFontSize(f: FontSize) { fontSize.value = f }
 
-  watch(current, (v) => {
-    applyToDocument(v)
+  watch([current, contrast, fontSize], () => {
+    applyToDocument(current.value, contrast.value, fontSize.value)
     try {
-      localStorage.setItem(STORAGE_KEY, v)
-    } catch {
-      // storage disabled — ignore
-    }
+      localStorage.setItem(STORAGE_KEY, current.value)
+      localStorage.setItem(CONTRAST_KEY, contrast.value)
+      localStorage.setItem(FONT_KEY, fontSize.value)
+    } catch {}
   })
 
-  return { current, setTheme }
+  return { current, contrast, fontSize, setTheme, setContrast, setFontSize }
 })

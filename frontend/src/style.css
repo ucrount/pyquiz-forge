@@ -11,11 +11,15 @@
   --el-bg-color-page: #050810;
   --el-bg-color-overlay: #0f1628;
 
-  --el-text-color-primary: #e2e8f5;
-  --el-text-color-regular: #9aa5c0;
-  --el-text-color-secondary: #6e7894;
-  --el-text-color-placeholder: #4a5470;
+  /* === 文字色阶 — 提高了基础对比度 === */
+  --el-text-color-primary: #f0f4fc;     /* 主要文字，最高对比 */
+  --el-text-color-regular: #c0c8dc;     /* 正文 */
+  --el-text-color-secondary: #8a94ad;   /* 次要文字（标签、说明） */
+  --el-text-color-placeholder: #5a6478; /* 占位符 */
   --el-text-color-disabled: #3a4258;
+
+  /* 字号默认值（被 [data-font] 覆盖） */
+  --base-font-size: 14px;
 
   --el-border-color: #1f2944;
   --el-border-color-light: #2a3654;
@@ -94,6 +98,12 @@
   --glass-bg: rgba(20, 8, 38, 0.6);
   --glass-border: rgba(255, 77, 214, 0.15);
   --glass-border-hover: rgba(255, 77, 214, 0.45);
+
+  /* 暖紫色调的文字，在深紫底上对比足够 */
+  --el-text-color-primary: #faecfd;
+  --el-text-color-regular: #d8c0e8;
+  --el-text-color-secondary: #a890c0;
+  --el-text-color-placeholder: #6c5582;
 }
 
 [data-theme='matrix'] {
@@ -109,6 +119,12 @@
   --glass-bg: rgba(0, 14, 7, 0.6);
   --glass-border: rgba(0, 255, 126, 0.15);
   --glass-border-hover: rgba(0, 255, 126, 0.45);
+
+  /* 黑客风：偏绿的白 */
+  --el-text-color-primary: #e8ffeb;
+  --el-text-color-regular: #b8e0c4;
+  --el-text-color-secondary: #80b090;
+  --el-text-color-placeholder: #506b58;
 }
 
 [data-theme='sunset'] {
@@ -123,15 +139,22 @@
   --glass-bg: rgba(28, 12, 16, 0.6);
   --glass-border: rgba(255, 128, 51, 0.15);
   --glass-border-hover: rgba(255, 128, 51, 0.45);
+
+  /* 暖色调奶油白 */
+  --el-text-color-primary: #fdf0e8;
+  --el-text-color-regular: #e0c8b8;
+  --el-text-color-secondary: #b09080;
+  --el-text-color-placeholder: #6c5040;
 }
 
 [data-theme='minimal'] {
   --el-bg-color-page: #050505;
   --el-bg-color: #0a0a0a;
   --el-bg-color-overlay: #141414;
-  --el-text-color-primary: #f0f0f0;
-  --el-text-color-regular: #b0b0b0;
-  --el-text-color-secondary: #808080;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #d4d4d4;
+  --el-text-color-secondary: #969696;
+  --el-text-color-placeholder: #5a5a5a;
   --el-border-color: #2a2a2a;
   --el-border-color-light: #353535;
   --el-border-color-lighter: #1f1f1f;
@@ -163,6 +186,50 @@
   box-shadow: none !important;
 }
 
+/* =========================================================
+   高对比度模式 — 任何主题下都把文字调到最亮
+   通过 <html data-contrast="high"> 触发
+   ========================================================= */
+
+[data-contrast='high'] {
+  --el-text-color-primary: #ffffff !important;
+  --el-text-color-regular: #e8eef8 !important;
+  --el-text-color-secondary: #c0c8d8 !important;
+  --el-text-color-placeholder: #8090a8 !important;
+}
+
+/* Minimal 主题下的高对比 — 纯白增强 */
+[data-theme='minimal'][data-contrast='high'] {
+  --el-text-color-regular: #f0f0f0 !important;
+  --el-text-color-secondary: #c8c8c8 !important;
+}
+
+/* Matrix / Nebula / Sunset 主题下的高对比 — 保留色调但更亮 */
+[data-theme='matrix'][data-contrast='high'] {
+  --el-text-color-primary: #ffffff !important;
+  --el-text-color-regular: #d8ffe0 !important;
+  --el-text-color-secondary: #a8d8b8 !important;
+}
+[data-theme='nebula'][data-contrast='high'] {
+  --el-text-color-primary: #ffffff !important;
+  --el-text-color-regular: #f0e0fa !important;
+  --el-text-color-secondary: #d0b0e0 !important;
+}
+[data-theme='sunset'][data-contrast='high'] {
+  --el-text-color-primary: #ffffff !important;
+  --el-text-color-regular: #fae0c8 !important;
+  --el-text-color-secondary: #d8b090 !important;
+}
+
+/* =========================================================
+   字号
+   ========================================================= */
+
+[data-font='small']  { --base-font-size: 12.5px; }
+[data-font='normal'] { --base-font-size: 14px; }
+[data-font='large']  { --base-font-size: 16px; }
+[data-font='xlarge'] { --base-font-size: 17.5px; }
+
 html,
 body,
 #app {
@@ -174,7 +241,7 @@ body,
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  font-size: 14px;
+  font-size: var(--base-font-size, 14px);
   color: var(--el-text-color-primary);
   background-color: var(--el-bg-color-page);
   background-image:
