@@ -41,7 +41,7 @@ const color = computed(() => {
 
 .badge.none {
   background: #f4f4f5;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-weight: 400;
 }
 

@@ -286,7 +286,7 @@ a {
 }
 
 .page {
-  padding: 20px 28px;
+  padding: 24px 32px;
   position: relative;
   z-index: 1;
 }
@@ -856,7 +856,7 @@ a {
    =========================================================== */
 
 .page {
-  padding: 20px 28px;
+  padding: 24px 32px;
   width: 100%;
   box-sizing: border-box;
 }

@@ -1,10 +1,5 @@
 <template>
   <div class="page review-page">
-    <div class="page-header">
-      <h2>REVIEW QUEUE</h2>
-      <span class="header-meta mono">{{ langStore.current.toUpperCase() }}</span>
-    </div>
-
     <!-- Stats cards -->
     <el-row :gutter="14" class="stats-row">
       <el-col :span="6">

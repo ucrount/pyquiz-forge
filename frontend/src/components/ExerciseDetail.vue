@@ -197,7 +197,7 @@ const Section = (_props: any, { slots, attrs }: any) =>
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .ex-meta {
@@ -214,7 +214,7 @@ const Section = (_props: any, { slots, attrs }: any) =>
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #606266;
+  color: var(--el-text-color-regular);
   border-left: 3px solid #409eff;
   padding-left: 8px;
 }
@@ -222,7 +222,7 @@ const Section = (_props: any, { slots, attrs }: any) =>
 .text {
   margin: 0;
   white-space: pre-wrap;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .answer {
@@ -251,7 +251,7 @@ const Section = (_props: any, { slots, attrs }: any) =>
 }
 
 .muted {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 
@@ -298,12 +298,12 @@ const Section = (_props: any, { slots, attrs }: any) =>
 
 .score-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .score-value {
   font-size: 18px;
-  color: #303133;
+  color: var(--el-text-color-primary);
   font-variant-numeric: tabular-nums;
   margin-top: 4px;
 }
@@ -312,12 +312,12 @@ const Section = (_props: any, { slots, attrs }: any) =>
   margin: 8px 0 4px;
   font-size: 13px;
   line-height: 1.6;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .score-meta {
   margin: 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 </style>

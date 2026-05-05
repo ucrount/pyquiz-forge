@@ -2,10 +2,6 @@
   <div class="page practice-page">
     <!-- Stage A: Setup -->
     <template v-if="stage === 'setup'">
-      <div class="page-header">
-        <h2>PRACTICE TERMINAL</h2>
-      </div>
-
       <CyberCard accent="cyan" class="setup-card">
         <template #header>
           <span class="cyber-card__title">▸ 配置练习参数</span>
@@ -157,10 +153,6 @@
 
     <!-- Stage C: Summary -->
     <template v-else>
-      <div class="page-header">
-        <h2>SESSION REPORT</h2>
-      </div>
-
       <PracticeSummary
         :records="answers"
         :total-duration-ms="totalDuration"

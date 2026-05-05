@@ -1,23 +1,11 @@
 <template>
   <div class="page exercises-page">
-    <div class="page-header">
-      <h2>EXERCISE BANK</h2>
-      <div class="header-actions">
-        <el-button @click="$router.push('/practice')">
-          <el-icon><Aim /></el-icon><span>开始练习</span>
-        </el-button>
-        <el-button type="primary" @click="$router.push('/generate')">
-          <el-icon><MagicStick /></el-icon><span>生成新题</span>
-        </el-button>
-      </div>
-    </div>
-
     <el-row :gutter="16">
       <!-- 左侧：树形分类 -->
       <el-col :span="7">
         <CyberCard accent="cyan" class="tree-card">
           <template #header>
-            <span class="cyber-card__title">▸ CATEGORIES</span>
+            <span class="cyber-card__title">▸ 分类</span>
           </template>
           <template #extra>
             <el-link type="primary" :underline="false" @click="loadAll">
@@ -91,9 +79,17 @@
             </span>
           </template>
           <template #extra>
-            <span class="filter-summary mono">
-              {{ total }} 题
-            </span>
+            <div class="list-card-extra">
+              <span class="filter-summary mono">
+                {{ total }} 题
+              </span>
+              <el-button size="small" @click="$router.push('/practice')">
+                <el-icon><Aim /></el-icon><span>开始练习</span>
+              </el-button>
+              <el-button size="small" type="primary" @click="$router.push('/generate')">
+                <el-icon><MagicStick /></el-icon><span>生成新题</span>
+              </el-button>
+            </div>
           </template>
 
           <!-- 筛选器 -->
@@ -606,8 +602,9 @@ onMounted(loadAll)
   min-height: calc(100vh - 64px);
 }
 
-.header-actions {
+.list-card-extra {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 

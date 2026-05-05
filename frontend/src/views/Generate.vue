@@ -1,16 +1,15 @@
 <template>
   <div class="page page--medium">
-    <div class="page-header">
-      <h2>EXERCISE GENERATOR</h2>
-      <div>
-        <el-button @click="batchVisible = true">
-          <el-icon><Operation /></el-icon><span>批量生成</span>
-        </el-button>
-      </div>
-    </div>
-
     <!-- Form -->
     <CyberCard accent="cyan" class="form-card">
+      <template #header>
+        <span class="cyber-card__title">▸ 生成参数</span>
+      </template>
+      <template #extra>
+        <el-button size="small" @click="batchVisible = true">
+          <el-icon><Operation /></el-icon><span>批量生成</span>
+        </el-button>
+      </template>
       <el-form :model="form" label-width="100px" label-position="right">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -86,7 +85,7 @@
       class="progress-card pulse"
     >
       <template #header>
-        <span class="cyber-card__title">⚡ GENERATION IN PROGRESS</span>
+        <span class="cyber-card__title">⚡ 生成进行中</span>
       </template>
       <template #extra>
         <span class="elapsed mono">{{ elapsedText }}</span>
@@ -108,7 +107,7 @@
       class="result-card"
     >
       <template #header>
-        <span class="cyber-card__title">▸ RESULT</span>
+        <span class="cyber-card__title">▸ 结果</span>
       </template>
       <template #extra>
         <el-button v-if="result" link type="primary" @click="onGenerate">

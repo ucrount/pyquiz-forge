@@ -1,9 +1,5 @@
 <template>
   <div class="page page--narrow settings-page">
-    <div class="page-header">
-      <h2>SETTINGS</h2>
-    </div>
-
     <CyberCard accent="cyan" class="settings-card">
       <template #header>
         <span class="cyber-card__title">▸ 视觉主题</span>

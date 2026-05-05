@@ -1,5 +1,5 @@
 <template>
-  <div class="page page--medium dashboard-page">
+  <div class="page page--medium">
     <!-- ========================================================
          区块 1：当前学习语言（用大按钮组，更醒目）
          ======================================================== -->
@@ -404,23 +404,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.dashboard-page {
-  /* 顶部 padding 略减，因为移除了 page-header */
-  padding-top: 16px;
-}
-
-.header-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-.meta-key {
-  color: var(--neon-cyan);
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
-}
-
 .muted {
   color: var(--el-text-color-secondary);
   font-size: 12px;

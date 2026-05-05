@@ -379,7 +379,7 @@ async function onSave() {
 }
 
 .muted {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 
@@ -395,7 +395,7 @@ async function onSave() {
 
 :deep(.code-area .el-textarea__inner) {
   background: #fafafa;
-  border-color: #e4e7ed;
+  border-color: var(--el-border-color-light);
 }
 
 .options-list {

@@ -175,7 +175,7 @@ onMounted(updateMatchCount)
 }
 
 .muted {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 

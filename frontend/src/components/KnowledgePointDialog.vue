@@ -217,13 +217,13 @@ async function onSubmit() {
 
 <style scoped>
 .muted {
-  color: #909399;
+  color: var(--el-text-color-secondary);
 }
 
 .hint {
   display: block;
   margin-top: 4px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 12px;
 }
 </style>

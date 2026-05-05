@@ -164,7 +164,7 @@ onMounted(load)
 
 <style scoped>
 .muted {
-  color: #909399;
+  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 
@@ -181,7 +181,7 @@ onMounted(load)
 .log-detail h4 {
   margin: 16px 0 8px;
   font-size: 14px;
-  color: #303133;
+  color: var(--el-text-color-primary);
 }
 
 .error-text {
