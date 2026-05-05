@@ -47,7 +47,8 @@ const display = computed(() => {
   font-size: 12px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--el-text-color-secondary);
+  color: var(--el-text-color-regular); /* 比 secondary 更亮 */
+  font-weight: 500;
 }
 
 .stat-value {

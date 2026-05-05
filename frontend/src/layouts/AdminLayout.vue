@@ -5,6 +5,7 @@
         <span class="brand-logo">⬡</span>
         <span class="brand-text">PYQUIZ <span class="brand-accent">FORGE</span></span>
       </div>
+
       <el-menu
         :default-active="activeRoute"
         :router="true"
@@ -18,21 +19,17 @@
           <el-icon><component :is="item.icon" /></el-icon>
           <span>{{ item.title }}</span>
         </el-menu-item>
-
-        <div class="menu-sep"></div>
-
-        <el-menu-item
-          v-for="item in bottomMenu"
-          :key="item.path"
-          :index="item.path"
-        >
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
-        </el-menu-item>
       </el-menu>
+
+      <!-- 左下角：设置按钮 + 系统状态 -->
       <div class="aside-footer">
-        <span class="status-dot pulse"></span>
-        <span class="status-text">SYSTEM ONLINE</span>
+        <router-link to="/settings" class="settings-btn" :class="{ 'is-active': activeRoute === '/settings' }">
+          <el-icon><Tools /></el-icon>
+          <span>设置</span>
+        </router-link>
+        <div class="status-block" title="System Online">
+          <span class="status-dot pulse"></span>
+        </div>
       </div>
     </el-aside>
 
@@ -40,22 +37,6 @@
       <el-header class="layout-header">
         <div class="header-title">{{ currentTitle }}</div>
         <div class="header-right">
-          <el-select
-            :model-value="langStore.current"
-            size="small"
-            style="width: 140px"
-            @update:model-value="onLanguageChange"
-          >
-            <template #prefix>
-              <span class="lang-prefix">LANG</span>
-            </template>
-            <el-option
-              v-for="opt in LANGUAGE_OPTIONS"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </el-select>
           <el-tag v-if="activeLLMName" size="small" effect="plain" type="success">
             ▸ {{ activeLLMName }}
           </el-tag>
@@ -98,9 +79,7 @@ import {
   Tools,
 } from '@element-plus/icons-vue'
 import { useLLMConfigStore } from '@/stores/llmConfig'
-import { useLanguageStore } from '@/stores/language'
 import { useThemeStore } from '@/stores/theme'
-import { LANGUAGE_OPTIONS, type Language } from '@/types/common'
 
 const route = useRoute()
 
@@ -122,24 +101,15 @@ const mainMenu: MenuItem[] = [
   { path: '/export', title: '导出题库', icon: Download },
 ]
 
-const bottomMenu: MenuItem[] = [
-  { path: '/settings', title: '设置', icon: Tools },
-]
-
 const activeRoute = computed(() => route.path)
 const currentTitle = computed(
   () => (route.meta?.title as string | undefined) ?? '',
 )
 
 const llmStore = useLLMConfigStore()
-const langStore = useLanguageStore()
 useThemeStore() // ensures theme is applied to <html data-theme="..."> on mount
 
 const activeLLMName = computed(() => llmStore.active?.name ?? '')
-
-function onLanguageChange(v: Language) {
-  langStore.setLanguage(v)
-}
 
 onMounted(() => {
   llmStore.refresh().catch(() => void 0)
@@ -225,6 +195,7 @@ onMounted(() => {
   flex: 1;
   background: transparent;
   padding-top: 8px;
+  overflow-y: auto;
 }
 
 .layout-menu :deep(.el-menu-item) {
@@ -258,15 +229,62 @@ onMounted(() => {
   font-size: 18px;
 }
 
+/* === 左下角：设置按钮 + 系统状态 === */
 .aside-footer {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 18px;
+  padding: 10px 12px;
   border-top: 1px solid var(--el-border-color-lighter);
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--el-text-color-secondary);
+}
+
+.settings-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(15, 22, 40, 0.5);
+  border: 1px solid var(--el-border-color);
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.settings-btn .el-icon {
+  font-size: 16px;
+}
+
+.settings-btn:hover {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+}
+
+.settings-btn.is-active {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 212, 255, 0.18) 0%,
+    rgba(0, 212, 255, 0.06) 100%
+  );
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: inset 0 0 12px rgba(0, 212, 255, 0.15);
+}
+
+.status-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
 }
 
 .status-dot {
@@ -275,11 +293,6 @@ onMounted(() => {
   border-radius: 50%;
   background: var(--neon-green);
   box-shadow: 0 0 8px var(--neon-green);
-}
-
-.status-text {
-  font-weight: 600;
-  color: var(--neon-green);
 }
 
 .layout-header {
@@ -328,19 +341,5 @@ onMounted(() => {
   background: transparent;
   padding: 0;
   overflow-y: auto;
-}
-
-.lang-prefix {
-  color: var(--el-text-color-secondary);
-  font-size: 11px;
-  margin-right: 4px;
-  letter-spacing: 0.6px;
-}
-
-.menu-sep {
-  height: 1px;
-  background: var(--el-border-color-lighter);
-  margin: 12px 16px;
-  opacity: 0.6;
 }
 </style>
