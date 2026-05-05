@@ -41,6 +41,16 @@ class BatchJobCreated(BaseModel):
     total: int
 
 
+class JobEvent(BaseModel):
+    """One streaming entry on a long-running job (e.g. batch generation)."""
+    ts: float
+    kind: str  # start | success | fail
+    label: str = ""
+    exercise_id: Optional[int] = None
+    error: str = ""
+    latency_ms: int = 0
+
+
 class JobProgress(BaseModel):
     """Polled by frontend to render the progress bar."""
     id: str
@@ -51,6 +61,7 @@ class JobProgress(BaseModel):
     current: str = ""
     succeeded: List[int] = Field(default_factory=list)
     failed: List[dict] = Field(default_factory=list)
+    events: List[JobEvent] = Field(default_factory=list)
     created_at: float = 0
     finished_at: Optional[float] = None
 

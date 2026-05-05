@@ -58,11 +58,48 @@ def create_job(*, total: int, kind: str = "generation") -> str:
             "current": "",
             "succeeded": [],  # exercise ids
             "failed": [],  # {error, params}
+            "events": [],  # streaming log: [{ts, kind, label, exercise_id?, error?, latency_ms?}]
             "created_at": _now(),
             "finished_at": None,
         }
     logger.info("Job %s created (%s, total=%d)", job_id, kind, total)
     return job_id
+
+
+def append_event(
+    job_id: str,
+    *,
+    kind: str,
+    label: str = "",
+    exercise_id: Optional[int] = None,
+    error: str = "",
+    latency_ms: int = 0,
+) -> None:
+    """
+    Push one streaming event to the job. kinds:
+      - 'start':    a new item began
+      - 'success':  item completed successfully
+      - 'fail':     item failed (error filled)
+
+    Frontend tails this list while the job runs, like a console log.
+    Capped at 500 entries to keep memory bounded.
+    """
+    event = {
+        "ts": _now(),
+        "kind": kind,
+        "label": label,
+        "exercise_id": exercise_id,
+        "error": error,
+        "latency_ms": latency_ms,
+    }
+    with _lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            return
+        events = job.setdefault("events", [])
+        events.append(event)
+        if len(events) > 500:
+            del events[: len(events) - 500]
 
 
 def update_job(job_id: str, **patch: Any) -> None:

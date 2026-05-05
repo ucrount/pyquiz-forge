@@ -14,6 +14,15 @@ export interface BatchJobCreated {
   total: number
 }
 
+export interface JobEvent {
+  ts: number
+  kind: 'start' | 'success' | 'fail'
+  label: string
+  exercise_id: number | null
+  error: string
+  latency_ms: number
+}
+
 export interface JobProgress {
   id: string
   kind: string
@@ -23,6 +32,7 @@ export interface JobProgress {
   current: string
   succeeded: number[]
   failed: Array<{ difficulty: string; question_type: string; error: string }>
+  events: JobEvent[]
   created_at: number
   finished_at: number | null
 }

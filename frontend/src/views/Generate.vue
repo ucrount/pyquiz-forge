@@ -222,10 +222,33 @@
             :status="job.status === 'done' ? 'success' : ''"
             :stroke-width="10"
           />
-          <p class="job-current" v-if="job.current">
-            <span class="muted">当前：</span>
-            <span class="mono">{{ job.current }}</span>
+          <p v-if="etaText && job.status === 'running'" class="job-eta mono">
+            <span class="muted">⏱ </span>{{ etaText }}
           </p>
+
+          <!-- Streaming event log -->
+          <div v-if="job.events && job.events.length" class="job-events" ref="eventsRef">
+            <div
+              v-for="(ev, i) in job.events"
+              :key="i"
+              class="job-event"
+              :class="`evt-${ev.kind}`"
+            >
+              <span class="evt-time mono">{{ formatTs(ev.ts) }}</span>
+              <span class="evt-icon">{{ evtIcon(ev.kind) }}</span>
+              <span class="evt-label">{{ ev.label }}</span>
+              <span v-if="ev.kind === 'success'" class="evt-meta mono">
+                → #{{ ev.exercise_id }} · {{ formatLatency(ev.latency_ms) }}
+              </span>
+              <span v-else-if="ev.kind === 'fail'" class="evt-meta">
+                → <span class="evt-err">{{ ev.error }}</span>
+              </span>
+              <span v-else-if="ev.kind === 'start'" class="evt-meta muted">
+                生成中…
+              </span>
+            </div>
+          </div>
+
           <div class="job-summary">
             <span class="job-stat ok">✓ {{ job.succeeded.length }} 成功</span>
             <span class="job-stat fail" v-if="job.failed.length">
@@ -247,7 +270,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   MagicStick,
@@ -398,6 +421,59 @@ const jobPercent = computed(() => {
   return Math.min(100, Math.round((job.value.completed / job.value.total) * 100))
 })
 
+// ETA based on the average latency of completed (success+fail) events
+const etaText = computed(() => {
+  const j = job.value
+  if (!j || j.status !== 'running' || !j.events?.length) return ''
+  const finished = j.events.filter(
+    (e) => (e.kind === 'success' || e.kind === 'fail') && e.latency_ms > 0,
+  )
+  if (finished.length === 0) return ''
+  const avgMs =
+    finished.reduce((sum, e) => sum + e.latency_ms, 0) / finished.length
+  const remaining = j.total - j.completed
+  if (remaining <= 0) return ''
+  // Concurrency = 3, so wall-clock ETA ≈ remaining * avg / 3
+  const etaMs = (remaining * avgMs) / 3
+  const sec = Math.round(etaMs / 1000)
+  const avgSec = (avgMs / 1000).toFixed(1)
+  if (sec < 60) {
+    return `平均 ${avgSec}s/题，预计剩余 ${sec}s`
+  }
+  const m = Math.floor(sec / 60)
+  return `平均 ${avgSec}s/题，预计剩余 ${m}分${sec % 60}秒`
+})
+
+function formatTs(unixSec: number): string {
+  const d = new Date(unixSec * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+function formatLatency(ms: number): string {
+  if (!ms) return ''
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function evtIcon(kind: 'start' | 'success' | 'fail'): string {
+  return { start: '▶', success: '✓', fail: '✗' }[kind]
+}
+
+const eventsRef = ref<HTMLDivElement | null>(null)
+
+// Auto-scroll the events panel to the bottom as new events stream in
+watch(
+  () => job.value?.events?.length ?? 0,
+  () => {
+    nextTick(() => {
+      if (eventsRef.value) {
+        eventsRef.value.scrollTop = eventsRef.value.scrollHeight
+      }
+    })
+  },
+)
+
 function addBatchItem() {
   batchForm.items.push({ difficulty: 'basic', question_type: 'program', count: 1 })
 }
@@ -517,6 +593,79 @@ onUnmounted(() => {
 .job-current {
   margin-top: 8px;
   font-size: 13px;
+}
+
+.job-eta {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+}
+
+.job-events {
+  margin-top: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.job-event {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 1px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evt-time {
+  color: var(--el-text-color-secondary);
+  flex-shrink: 0;
+  width: 64px;
+}
+
+.evt-icon {
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.evt-start .evt-icon {
+  color: var(--neon-cyan);
+}
+
+.evt-success .evt-icon {
+  color: var(--neon-green);
+}
+
+.evt-fail .evt-icon {
+  color: var(--neon-pink);
+}
+
+.evt-label {
+  color: var(--el-text-color-primary);
+  flex-shrink: 0;
+}
+
+.evt-meta {
+  color: var(--el-text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evt-err {
+  color: var(--neon-pink);
+}
+
+.muted {
+  color: var(--el-text-color-secondary);
 }
 
 .job-summary {

@@ -1,4 +1,5 @@
 """Generation endpoints: single, batch (async), regenerate, jobs."""
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -23,6 +24,11 @@ from app.services.generation_service import GenerationError
 
 router = APIRouter(tags=["generation"])
 
+# How many exercises to generate concurrently in a batch job.
+# Higher = faster wall clock, but more concurrent calls to the LLM provider.
+# 3 is a safe default for typical rate limits.
+_BATCH_CONCURRENCY = 3
+
 
 @router.post("/exercises/generate", response_model=ExerciseRead, status_code=201)
 def generate_one(req: GenerateRequest, db: Session = Depends(get_db)):
@@ -39,55 +45,125 @@ def generate_one(req: GenerateRequest, db: Session = Depends(get_db)):
     return ex
 
 
+def _generate_one_in_thread(
+    job_id: str,
+    knowledge_point_id: int,
+    item: dict,
+    seq_label: str,
+    llm_config_id: int | None,
+) -> None:
+    """
+    One unit of work for ThreadPoolExecutor: generates a single exercise,
+    updates the job state with start/success/fail events. Each thread gets
+    its own DB session — never share a Session across threads.
+    """
+    import time as _time
+
+    db = SessionLocal()
+    job_service.update_job(job_id, current=seq_label)
+    job_service.append_event(job_id, kind="start", label=seq_label)
+    t0 = _time.perf_counter()
+    try:
+        ex = generation_service.generate_one(
+            db,
+            knowledge_point_id=knowledge_point_id,
+            difficulty=item["difficulty"],
+            question_type=item["question_type"],
+            llm_config_id=llm_config_id,
+        )
+        latency_ms = int((_time.perf_counter() - t0) * 1000)
+        job_service.progress_job(
+            job_id,
+            current_label=seq_label,
+            succeeded_id=ex.id,
+        )
+        job_service.append_event(
+            job_id,
+            kind="success",
+            label=seq_label,
+            exercise_id=ex.id,
+            latency_ms=latency_ms,
+        )
+    except GenerationError as e:
+        latency_ms = int((_time.perf_counter() - t0) * 1000)
+        job_service.progress_job(
+            job_id,
+            current_label=seq_label,
+            failed={
+                "difficulty": item["difficulty"],
+                "question_type": item["question_type"],
+                "error": str(e),
+            },
+        )
+        job_service.append_event(
+            job_id,
+            kind="fail",
+            label=seq_label,
+            error=str(e),
+            latency_ms=latency_ms,
+        )
+    except Exception as e:  # 兜底
+        latency_ms = int((_time.perf_counter() - t0) * 1000)
+        err = f"unexpected: {type(e).__name__}: {e}"
+        job_service.progress_job(
+            job_id,
+            current_label=seq_label,
+            failed={
+                "difficulty": item["difficulty"],
+                "question_type": item["question_type"],
+                "error": err,
+            },
+        )
+        job_service.append_event(
+            job_id,
+            kind="fail",
+            label=seq_label,
+            error=err,
+            latency_ms=latency_ms,
+        )
+    finally:
+        db.close()
+
+
 def _run_batch_job(
     job_id: str,
     knowledge_point_id: int,
     items: list,
     llm_config_id: int | None,
 ) -> None:
-    """Background task: iterate items, generate one by one, update job state."""
-    db = SessionLocal()
+    """
+    Background entry point. Expands items×count into individual unit tasks,
+    runs them concurrently with a small worker pool.
+    """
+    units: list[tuple[dict, str]] = []
+    for item in items:
+        for n in range(item["count"]):
+            label = f"{item['difficulty']} / {item['question_type']} ({n + 1}/{item['count']})"
+            units.append((item, label))
+
     try:
-        for item in items:
-            for n in range(item["count"]):
-                label = f"{item['difficulty']}/{item['question_type']} ({n + 1}/{item['count']})"
-                job_service.update_job(job_id, current=label)
+        with ThreadPoolExecutor(max_workers=_BATCH_CONCURRENCY) as pool:
+            futures = [
+                pool.submit(
+                    _generate_one_in_thread,
+                    job_id,
+                    knowledge_point_id,
+                    item,
+                    label,
+                    llm_config_id,
+                )
+                for item, label in units
+            ]
+            # Drain all so exceptions inside threads don't get silently dropped
+            for f in as_completed(futures):
                 try:
-                    ex = generation_service.generate_one(
-                        db,
-                        knowledge_point_id=knowledge_point_id,
-                        difficulty=item["difficulty"],
-                        question_type=item["question_type"],
-                        llm_config_id=llm_config_id,
-                    )
-                    job_service.progress_job(
-                        job_id,
-                        current_label=label,
-                        succeeded_id=ex.id,
-                    )
-                except GenerationError as e:
-                    job_service.progress_job(
-                        job_id,
-                        current_label=label,
-                        failed={
-                            "difficulty": item["difficulty"],
-                            "question_type": item["question_type"],
-                            "error": str(e),
-                        },
-                    )
-                except Exception as e:  # 兜底，防止后台任务死掉
-                    job_service.progress_job(
-                        job_id,
-                        current_label=label,
-                        failed={
-                            "difficulty": item["difficulty"],
-                            "question_type": item["question_type"],
-                            "error": f"unexpected: {type(e).__name__}: {e}",
-                        },
-                    )
-        job_service.finish_job(job_id, status="done")
+                    f.result()
+                except Exception:
+                    # Already recorded as a fail event by _generate_one_in_thread,
+                    # this is just belt-and-suspenders.
+                    pass
     finally:
-        db.close()
+        job_service.finish_job(job_id, status="done")
 
 
 @router.post(
