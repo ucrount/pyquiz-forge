@@ -181,30 +181,38 @@
             v-loading="loadingLogs"
             empty-text="暂无生成记录"
             size="small"
+            class="recent-logs-table"
           >
-            <el-table-column prop="id" label="ID" width="60" />
-            <el-table-column label="知识点" width="80">
+            <el-table-column prop="id" label="ID" min-width="60" />
+            <el-table-column label="知识点" min-width="80">
               <template #default="{ row }">
                 <span class="mono">#{{ row.knowledge_point_id ?? '-' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="难度" width="80">
+            <el-table-column label="难度" min-width="90">
               <template #default="{ row }">
                 <DifficultyTag v-if="row.difficulty" :value="row.difficulty" />
               </template>
             </el-table-column>
-            <el-table-column label="题型" width="100">
+            <el-table-column label="题型" min-width="120">
               <template #default="{ row }">
                 <QuestionTypeTag v-if="row.question_type" :value="row.question_type" />
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="70">
+            <el-table-column label="状态" min-width="70">
               <template #default="{ row }">
                 <el-tag v-if="row.parsed_ok" type="success" size="small">OK</el-tag>
                 <el-tag v-else type="danger" size="small">FAIL</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="耗时" width="80">
+            <el-table-column label="Tokens" min-width="120">
+              <template #default="{ row }">
+                <span class="mono small muted">
+                  ↑{{ row.prompt_tokens }} / ↓{{ row.completion_tokens }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="耗时" min-width="90">
               <template #default="{ row }">
                 <span class="mono">{{ formatDuration(row.latency_ms) }}</span>
               </template>
@@ -493,6 +501,21 @@ onMounted(async () => {
 
 .full-card {
   height: 100%;
+}
+
+/* ===== Recent logs table ===== */
+.recent-logs-table {
+  width: 100%;
+}
+
+.recent-logs-table :deep(.el-table__cell) {
+  padding: 6px 0;
+}
+
+.recent-logs-table :deep(.el-tag) {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
 }
 
 /* ===== Mastery distribution ===== */
