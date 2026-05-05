@@ -1,12 +1,5 @@
 <template>
   <div class="page learning-page">
-    <div class="page-header">
-      <h2>LEARNING PATH</h2>
-      <el-button type="primary" @click="onCreateChapter">
-        <el-icon><Plus /></el-icon><span>新建章节</span>
-      </el-button>
-    </div>
-
     <el-row :gutter="16">
       <el-col :span="9">
         <CyberCard accent="cyan" class="tree-card">
@@ -14,7 +7,17 @@
             <span class="cyber-card__title">▸ 章节 / 知识点</span>
           </template>
           <template #extra>
-            <span class="mono small-stat">{{ flatKpCount }}</span>
+            <div class="tree-header-extra">
+              <span class="mono small-stat">{{ flatKpCount }}</span>
+              <el-button
+                size="small"
+                type="primary"
+                @click="onCreateChapter"
+                class="new-chapter-btn"
+              >
+                <el-icon><Plus /></el-icon><span>新建章节</span>
+              </el-button>
+            </div>
           </template>
 
           <el-input
@@ -385,6 +388,17 @@ onMounted(load)
 
 .small-stat {
   color: var(--neon-cyan);
+  font-size: 12px;
+}
+
+.tree-header-extra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.new-chapter-btn {
+  padding: 6px 10px;
   font-size: 12px;
 }
 

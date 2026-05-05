@@ -1,12 +1,5 @@
 <template>
-  <div class="page page--medium">
-    <div class="page-header">
-      <h2>SYSTEM OVERVIEW</h2>
-      <span class="header-meta mono">
-        <span class="meta-key">v0.3.1</span>
-      </span>
-    </div>
-
+  <div class="page page--medium dashboard-page">
     <!-- ========================================================
          区块 1：当前学习语言（用大按钮组，更醒目）
          ======================================================== -->
@@ -411,6 +404,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.dashboard-page {
+  /* 顶部 padding 略减，因为移除了 page-header */
+  padding-top: 16px;
+}
+
 .header-meta {
   display: inline-flex;
   align-items: center;
