@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     default_llm_temperature: float = 0.7
     default_llm_max_tokens: int = 2048
 
+    # Code sandbox (Piston)
+    piston_api_base: str = "https://emkc.org/api/v2/piston"
+    piston_run_timeout_ms: int = 5000  # max runtime per test case
+    piston_compile_timeout_ms: int = 10000
+
     @property
     def cors_origin_list(self) -> List[str]:
         if self.cors_origins.strip() == "*":

@@ -119,7 +119,12 @@
           placeholder="在此写下你的代码（或思路）..."
         />
         <p class="hint-text">
-          ⓘ 编程类题目不会自动判分，提交后可对比参考答案。
+          <template v-if="useSandbox">
+            ⓘ 提交后会用真实沙盒运行你的代码，自动对比测试用例。
+          </template>
+          <template v-else>
+            ⓘ 此题没有测试用例，提交后请对照参考答案自评。
+          </template>
         </p>
       </template>
     </div>
@@ -135,19 +140,29 @@
         </span>
       </div>
 
-      <div class="result-section">
+      <!-- Sandbox per-case detail (only for code questions with test cases) -->
+      <div v-if="judgeResult" class="result-section">
+        <SandboxResult :result="judgeResult" />
+      </div>
+
+      <div v-if="!judgeResult" class="result-section">
         <span class="muted">你的答案：</span>
         <div class="user-answer">{{ userAnswer || '（空）' }}</div>
       </div>
 
-      <div class="result-section">
+      <div v-if="judgeResult && userAnswer" class="result-section">
+        <span class="muted">你的代码：</span>
+        <CodeBlock :code="userAnswer" :language="exercise.language || 'python'" :copyable="true" />
+      </div>
+
+      <div v-if="exercise.standard_answer && !judgeResult" class="result-section">
         <span class="muted">标准答案：</span>
-        <div class="std-answer">{{ exercise.standard_answer || '（无）' }}</div>
+        <div class="std-answer">{{ exercise.standard_answer }}</div>
       </div>
 
       <div v-if="exercise.reference_code" class="result-section">
         <span class="muted">参考代码：</span>
-        <CodeBlock :code="exercise.reference_code" language="python" :copyable="true" />
+        <CodeBlock :code="exercise.reference_code" :language="exercise.language || 'python'" :copyable="true" />
       </div>
 
       <div v-if="exercise.explanation" class="result-section">
@@ -164,9 +179,14 @@
     <!-- Action bar -->
     <div class="pq-actions">
       <template v-if="!submitted">
-        <el-button @click="onSkip">跳过</el-button>
-        <el-button type="primary" :disabled="!canSubmit" @click="onSubmit">
-          提交答案
+        <el-button @click="onSkip" :disabled="judging">跳过</el-button>
+        <el-button
+          type="primary"
+          :disabled="!canSubmit || judging"
+          :loading="judging"
+          @click="onSubmit"
+        >
+          {{ judging ? '沙盒运行中...' : '提交答案' }}
         </el-button>
       </template>
       <template v-else>
@@ -180,12 +200,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ElMessage } from 'element-plus'
 import type { Exercise } from '@/types/exercise'
+import type { JudgeResult } from '@/types/sandbox'
 import { gradeAnswer, type GradeResult } from '@/utils/grading'
+import { sandboxApi } from '@/api'
 import DifficultyTag from './DifficultyTag.vue'
 import QuestionTypeTag from './QuestionTypeTag.vue'
 import ScoreBadge from './ScoreBadge.vue'
 import CodeBlock from './CodeBlock.vue'
+import SandboxResult from './SandboxResult.vue'
 
 const props = defineProps<{
   exercise: Exercise
@@ -202,6 +226,8 @@ const emit = defineEmits<{
 const userAnswer = ref<string>('')
 const submitted = ref(false)
 const gradeResult = ref<GradeResult>('skipped')
+const judging = ref(false)
+const judgeResult = ref<JudgeResult | null>(null)
 
 const startTime = ref(0)
 const elapsedMs = ref(0)
@@ -247,19 +273,32 @@ const canSubmit = computed(() => {
     props.exercise.question_type === 'program' ||
     props.exercise.question_type === 'debug'
   ) {
-    return true
+    return !useSandbox.value || userAnswer.value.trim().length > 0
   }
   return userAnswer.value.trim().length > 0
+})
+
+// True if the question is code-type AND has executable test cases
+const useSandbox = computed(() => {
+  const type = props.exercise.question_type
+  const isCodeType = type === 'complete' || type === 'program' || type === 'debug'
+  const hasTestCases = Array.isArray(props.exercise.test_cases) && props.exercise.test_cases.length > 0
+  return isCodeType && hasTestCases
 })
 
 const resultText = computed(() => {
   switch (gradeResult.value) {
     case 'correct':
-      return '回答正确！'
+      return judgeResult.value
+        ? `全部 ${judgeResult.value.total} 个测试用例通过！`
+        : '回答正确！'
     case 'wrong':
+      if (judgeResult.value) {
+        return `${judgeResult.value.passed} / ${judgeResult.value.total} 个用例通过`
+      }
       return '答错了，看下标准答案。'
     case 'no-grade':
-      return '编程类题目不自动判分，请对比参考答案自评。'
+      return '此题没有自动判分依据，请对比参考答案自评。'
     case 'skipped':
       return '已跳过。'
     default:
@@ -267,7 +306,34 @@ const resultText = computed(() => {
   }
 })
 
-function onSubmit() {
+async function onSubmit() {
+  // Code questions with test cases — use the sandbox
+  if (useSandbox.value) {
+    judging.value = true
+    try {
+      const result = await sandboxApi.judgeExercise(props.exercise.id, {
+        source: userAnswer.value,
+        language: props.exercise.language || undefined,
+      })
+      judgeResult.value = result
+      gradeResult.value = result.all_passed ? 'correct' : 'wrong'
+      submitted.value = true
+      stopTimer()
+      emit('submit', {
+        answer: userAnswer.value,
+        result: gradeResult.value,
+        durationMs: elapsedMs.value,
+      })
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || '沙盒服务调用失败'
+      ElMessage.error(`沙盒判分失败：${msg}`)
+    } finally {
+      judging.value = false
+    }
+    return
+  }
+
+  // Non-code or no test cases — fall back to string comparison
   const result = gradeAnswer(props.exercise, userAnswer.value)
   gradeResult.value = result
   submitted.value = true

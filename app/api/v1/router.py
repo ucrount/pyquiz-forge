@@ -8,6 +8,7 @@ from app.api.v1 import (
     learning_path,
     llm_config,
     practice,
+    sandbox,
     scoring,
     system,
 )
@@ -21,3 +22,4 @@ api_router.include_router(scoring.router)
 api_router.include_router(exercise.router)
 api_router.include_router(practice.router)
 api_router.include_router(export.router)
+api_router.include_router(sandbox.router)
