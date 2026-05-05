@@ -120,8 +120,9 @@ async function onDelete(row: LLMConfig) {
 
 <style scoped>
 .key {
-  font-family: 'SF Mono', Monaco, Consolas, monospace;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 13px;
+  color: var(--neon-cyan);
+  letter-spacing: 0.3px;
 }
 </style>
