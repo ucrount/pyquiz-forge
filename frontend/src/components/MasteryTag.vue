@@ -22,7 +22,7 @@ const label = computed(
   () => MASTERY_LABEL[props.value as Mastery] ?? props.value,
 )
 const color = computed(
-  () => MASTERY_COLOR[props.value as Mastery] ?? '#909399',
+  () => MASTERY_COLOR[props.value as Mastery] ?? '#94a3b8',
 )
 const icon = computed(
   () => MASTERY_ICON[props.value as Mastery] ?? '○',

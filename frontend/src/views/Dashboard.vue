@@ -533,9 +533,10 @@ onMounted(async () => {
 
 .mr-bar {
   height: 8px;
-  background: rgba(15, 22, 40, 0.7);
+  background: rgba(0, 0, 0, 0.45);
   border-radius: 4px;
   overflow: hidden;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .mr-bar-fill {

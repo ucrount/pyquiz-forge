@@ -102,7 +102,7 @@ export const MASTERY_LABEL: Record<Mastery, string> = {
 }
 
 export const MASTERY_COLOR: Record<Mastery, string> = {
-  not_started: '#909399',
+  not_started: '#94a3b8',
   learning: '#5ce0ff',
   mastered: '#00ff9d',
   unknown: '#ff4d8d',
